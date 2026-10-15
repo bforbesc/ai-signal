@@ -16,9 +16,3 @@ dist-ssr
 *.sln
 *.sw?
 tsconfig.tsbuildinfo
-
-# Xcode local output
-DerivedData/
-build/
-*.xcuserstate
-xcuserdata/
