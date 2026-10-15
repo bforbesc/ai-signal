@@ -36,6 +36,17 @@ final class GmailFeed: ObservableObject {
         }
         return try decoder.decode(T.self, from: data)
     }
+    private func hydrate(_ part: Part, messageID: String, token: String) async throws -> Part {
+        if let filename = part.filename, !filename.isEmpty { return part }
+        var body = part.body
+        if ["text/html", "text/plain"].contains(part.mimeType ?? ""),
+           body?.data == nil, let attachment = body?.attachmentId {
+            body = try await request("messages/" + messageID + "/attachments/" + attachment, token: token)
+        }
+        var children: [Part] = []
+        for child in part.parts ?? [] { children.append(try await hydrate(child, messageID: messageID, token: token)) }
+        return Part(mimeType: part.mimeType, filename: part.filename, headers: part.headers, body: body, parts: children)
+    }
     func reset() {
         generation = UUID(); items = []; pageToken = nil; labelID = nil
         loading = false; error = nil; lastUpdated = nil
@@ -64,7 +75,12 @@ final class GmailFeed: ObservableObject {
                 do {
                     let message: GmailMessage = try await request("messages/" + ref.id, query: [URLQueryItem(name: "format", value: "full")], token: token)
                     // Recheck membership in case Gmail removed the label after listing.
-                    if message.labelIds?.contains(label) == true { loaded.append(Newsletter(message)) }
+                    if message.labelIds?.contains(label) == true {
+                        var payload = message.payload
+                        if let part = payload { payload = try await hydrate(part, messageID: ref.id, token: token) }
+                        let complete = GmailMessage(id: message.id, labelIds: message.labelIds, snippet: message.snippet, internalDate: message.internalDate, payload: payload)
+                        loaded.append(Newsletter(complete))
+                    }
                 } catch {
                     // A failed body fetch keeps the cursor unchanged so retry cannot skip an email.
                     throw error

@@ -8,7 +8,7 @@ A small SwiftUI app for newsletters carrying the exact Gmail label `_AI_SIGNAL`.
 - Read-only Gmail API requests, filtered by the `_AI_SIGNAL` label ID. Message membership is checked again before display.
 - Newest-first feed, 15-message pagination, deduplication, refresh, empty/error states and retry.
 - Automatic refresh on returning to the app after five minutes.
-- Nested multipart email decoding, HTML/plain-text reader, Unicode/base64url decoding.
+- Nested multipart email decoding, attachment-backed HTML/plain-text bodies, and Unicode/base64url decoding.
 - JavaScript disabled in the email reader, forms/frames/network blocked by CSP, external links opened in Safari. Remote images start blocked and can be enabled per reading session.
 - Sample feed available before Google configuration. Sample stories are explicitly marked.
 
@@ -45,7 +45,7 @@ Manual device acceptance:
 
 ## Current limits
 
-No offline email cache, push notifications, summaries, account switching UI or background synchronization. Attachment-backed MIME bodies and inline `cid:` images are not downloaded; text/snippet fallbacks are shown. Header encodings beyond Google's returned header strings are not specially decoded. Full Gmail sign-in and rendering still need an actual device check.
+No offline email cache, push notifications, summaries, account switching UI or background synchronization. Inline `cid:` images and ordinary file attachments are not downloaded. Header encodings beyond Google's returned header strings are not specially decoded. Full Gmail sign-in and rendering still need an actual device check.
 
 ## REA
 
