@@ -27,7 +27,11 @@ npm run dev
 
 Open the Local URL printed by Vite. The demo works without Google configuration. `npm test` runs the email and reader tests; `npm run build` typechecks and builds `dist/` with its manifest and service worker.
 
-## Connect Gmail — one-time setup
+## Connect Gmail
+
+The hosted app now includes the owner’s public Google Web OAuth client ID. Open the site and tap **Connect Gmail**. You do not need to paste the ID on each device. Google’s sign-in and consent must be completed in your own browser.
+
+For your own deployment, use the setup below to create a replacement client, then set `VITE_GOOGLE_CLIENT_ID` or override it in connection settings.
 
 Google needs a **Web application** OAuth client, not the iOS client used by a native app. Standard personal Gmail API usage is available at no additional cost. Do not buy a plan or request paid quota increases for this reader.
 
@@ -38,7 +42,7 @@ Google needs a **Web application** OAuth client, not the iOS client used by a na
 5. In **Clients**, create a **Web application** client. Add the exact app origin under **Authorized JavaScript origins**:
    - `https://ai-signal-reader.opalash6.chatgpt.site`
    - For local development, add the actual local origin printed by Vite, such as `http://127.0.0.1:5173`.
-6. Open the app’s settings button, paste the public client ID, and save. Then tap **Connect Gmail**. Alternatively, set `VITE_GOOGLE_CLIENT_ID` before building.
+6. For a different deployment, set `VITE_GOOGLE_CLIENT_ID` before building, or override the public client ID in the app’s connection settings. Then tap **Connect Gmail**.
 7. Make sure the exact `_AI_SIGNAL` Gmail label contains the editions you want to read.
 
 No client secret, API key or payment information belongs in this app. Access tokens stay in memory; the public client ID and chosen text size are stored in the browser. Configuring a client ID in settings applies to that browser/device. Setting the public ID at build time avoids repeating this setup on other devices.
@@ -65,7 +69,7 @@ The repository builds to `dist/` and can also be hosted on Cloudflare Pages or a
 
 ## Validation and limits
 
-Automated tests cover nested MIME/Unicode decoding, attachment-backed bodies, exact-label matching, source discovery/filtering, pagination failures and reader isolation. Mobile/desktop demo checks cover feed navigation and reading controls. Live Google consent and a real iPhone sign-in still need the Web OAuth client configuration above.
+Automated tests cover nested MIME/Unicode decoding, attachment-backed bodies, exact-label matching, source discovery/filtering, pagination failures and reader isolation. Mobile/desktop demo checks cover feed navigation and reading controls. The hosted client ID is configured. Live Google consent, mailbox loading and real iPhone sign-in still require verification in the owner’s browser.
 
 No AI summaries, email writing/deleting, Gmail read-state changes, notifications, backend or offline email archive. Inline `cid:` attachments are not downloaded. Email encodings beyond UTF-8 are not specially decoded. Reading view can simplify unusual email layouts; email layout remains available.
 

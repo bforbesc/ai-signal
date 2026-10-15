@@ -1,5 +1,7 @@
 // Google Identity Services access tokens stay in memory. Only the public client ID is saved.
 const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+// Public OAuth identifier. Google restricts it to the registered web origins.
+const DEFAULT_CLIENT_ID = '198520129642-pr18hqs7sa8cj3e2u3jqer8koj2cv45l.apps.googleusercontent.com';
 interface TokenResponse { access_token: string; expires_in: number; scope: string; error?: string }
 interface TokenClient { requestAccessToken: (options: { prompt: string }) => void }
 declare global {
@@ -11,7 +13,7 @@ declare global {
 }
 export interface AccessToken { value: string; expiresAt: number }
 export function getClientId(): string {
-  return localStorage.getItem('ai-signal-client-id') || (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || '';
+  return localStorage.getItem('ai-signal-client-id') || (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || DEFAULT_CLIENT_ID;
 }
 export function saveClientId(value: string) { localStorage.setItem('ai-signal-client-id', value.trim()); client = null; }
 let client: TokenClient | null = null;
