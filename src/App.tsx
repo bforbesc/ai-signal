@@ -88,6 +88,6 @@ export default function App() {
       </main>
     </div>
     {current && <Reader item={current} onClose={close} position={`${index + 1} / ${items.length}`} onPrevious={index > 0 ? () => setSelected(items[index - 1].id) : undefined} onNext={index < items.length - 1 ? () => setSelected(items[index + 1].id) : undefined}/>}
-    {setup && <Setup onClose={() => setSetup(false)} onSave={() => { setSetup(false); setConfigVersion(value => value + 1); signOut(); setDemo(true); }}/>} 
+    {setup && <Setup onClose={() => setSetup(false)} onSave={() => { setSetup(false); setConfigVersion(value => value + 1); signOut(); setDemo(true); }}/>}
   </>;
 }
