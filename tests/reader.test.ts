@@ -10,3 +10,22 @@ test('reading view removes script, handlers, layout tables and unsafe links',()=
 test('remote images are blocked by default and tracking pixels stay excluded when enabled',()=>{assert.ok(!readerDocument(item,false,false,19).includes('<img'));assert.ok(!readerDocument(item,false,true,19).includes('<img'));});
 test('email layout retains tables but remains scriptless',()=>{const html=readerDocument(item,true,false,19);assert.ok(html.includes('<table'));assert.ok(html.includes("script-src 'none'"));assert.ok(!html.includes('<script'));assert.ok(!html.includes('onclick'));});
 test('plain text is escaped and reader font is bounded',()=>{const html=readerDocument({...item,html:'',text:'<script>hello</script>'},false,false,100);assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('font-size:24px'));});
+
+function readingBody(html:string, original=false){const rendered=readerDocument({...item,subject:'An edition',html},original,false,19);return parseHTML(rendered).document.body;}
+test('newsletter table menus and separators disappear while editorial links remain',()=>{
+ const html='<table><tr><td><a href="https://example.com/signup">Signup</a></td><td>|</td><td><a href="https://example.com/work">Work With Us</a></td><td>|</td><td><a href="https://example.com/follow">Follow on X</a></td></tr></table><p>Try the new tool: <a href="https://example.com/tool">Sign up</a> for access.</p><p><a href="https://example.com/story">READ MORE</a></p>';
+ const body=readingBody(html);assert.ok(!body.textContent.includes('Signup'));assert.ok(!body.textContent.includes('Follow on X'));assert.ok(!body.textContent.includes('|'));assert.equal(body.querySelector('a[href="https://example.com/tool"]')?.textContent,'Sign up');assert.ok(body.querySelector('a[href="https://example.com/story"]'));
+ assert.ok(readingBody(html,true).textContent.includes('Follow on X'));
+});
+test('footer boilerplate is removed without truncating the final story or substantive mission text',()=>{
+ const body=readingBody('<h2>Final story</h2><p>Our mission is to test better models.</p><p>Keep these last details.</p><table><tr><td>At Example, our mission is to inform. Our Privacy Policy explains our terms.</td></tr></table><table><tr><td>How was today\'s email? <a href="https://example.com/rate">Awesome</a></td></tr></table><table><tr><td><a href="https://example.com/unsubscribe">unsubscribe_me(): return True</a> Company address</td></tr></table>');
+ assert.ok(body.textContent.includes('Keep these last details.'));assert.ok(body.textContent.includes('Our mission is to test better models.'));assert.ok(!body.textContent.includes('Privacy Policy'));assert.ok(!body.textContent.includes('How was'));assert.ok(!body.textContent.includes('unsubscribe'));assert.ok(!body.textContent.includes('Company address'));
+});
+test('a linked contents table becomes an accessible collapsed section',()=>{
+ const body=readingBody('<table><tr><td class="h1">Summary</td></tr><tr><td><a href="https://example.com/1">First story</a><a href="https://example.com/2">Second story</a><a href="https://example.com/3">Third story</a></td></tr></table><h2>First story</h2><p>Full writing.</p>');
+ const contents=body.querySelector('details');assert.equal(contents?.querySelector('summary')?.textContent,'In this edition');assert.ok(!contents?.hasAttribute('open'));assert.equal(contents?.querySelectorAll('a').length,3);assert.ok(body.textContent.includes('Full writing.'));
+});
+test('subject scrolls inside the document, is escaped, and repeated headlines are omitted',()=>{
+ const rendered=readerDocument({...item,subject:'News <one>',html:'<title>Brand metadata</title><h1>News &lt;one&gt;</h1><p><strong>One</strong> <em>two</em> three.</p>'},false,false,19);const body=parseHTML(rendered).document.body;
+ assert.equal(body.querySelector('.reader-title')?.textContent,'News <one>');assert.equal(body.querySelectorAll('h1').length,1);assert.ok(!body.textContent.includes('Brand metadata'));assert.ok(body.textContent.includes('One two three.'));
+});

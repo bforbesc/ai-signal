@@ -11,7 +11,8 @@ The demo contains fictional AlphaSignal-style editions. Real email content is fe
 - One newest-first feed with automatic newsletter detection.
 - **All newsletters** or a filter for a specific publication. AlphaSignal is the only source in the demo; additional newsletters are detected when added to `_AI_SIGNAL`.
 - A Kindle-inspired reader: warm paper, serif text, comfortable margins, minimal controls.
-- **Aa** opens text-size controls, original email layout and optional remote images.
+- A compact title scrolls with the article. Reading view removes standalone signup/social menus, feedback controls and administrative footers, and folds long contents lists under **In this edition**.
+- **Aa** opens text-size controls, the default reading/email layout and optional remote images. Choices persist across newsletters and reloads on the same device; tap outside the panel to dismiss it.
 - Read-only Gmail access, refresh, pagination, reconnect and clear empty/error states.
 
 The current product is the web/PWA version. Xcode, TestFlight and Apple Developer Program enrollment are not required.
@@ -45,7 +46,7 @@ Google needs a **Web application** OAuth client, not the iOS client used by a na
 6. For a different deployment, set `VITE_GOOGLE_CLIENT_ID` before building, or override the public client ID in the app’s connection settings. Then tap **Connect Gmail**.
 7. Make sure the exact `_AI_SIGNAL` Gmail label contains the editions you want to read.
 
-No client secret, API key or payment information belongs in this app. Access tokens stay in memory; the public client ID and chosen text size are stored in the browser. Configuring a client ID in settings applies to that browser/device. Setting the public ID at build time avoids repeating this setup on other devices.
+No client secret, API key or payment information belongs in this app. Access tokens stay in memory; the public client ID and reading preferences (text size, layout and images) are stored in the browser. Configuring a client ID in settings applies to that browser/device. Setting the public ID at build time avoids repeating this setup on other devices.
 
 Google authorization is mailbox-wide; the application enforces `_AI_SIGNAL` in its queries and verifies membership. Google sessions expire: reconnecting through the app is separate from reinstalling it. The app itself has no weekly expiry. There is no backend token store or automatic background sync.
 
@@ -59,7 +60,7 @@ Publication identity uses the email’s `List-ID` header when available and othe
 
 ## Reading and privacy
 
-The reading view rebuilds the email into a small HTML allowlist inside an isolated iframe. Scripts, forms and embedded frames are blocked. Remote images start off; loading them can contact the newsletter’s image hosts. Detected one-pixel images remain excluded. Article links open separately. The original-layout option retains the newsletter’s visual formatting when needed.
+The reading view rebuilds the email into a small HTML allowlist inside an isolated iframe. Scripts, forms and embedded frames are blocked. Remote images start off; enabling them saves that preference on the device and can contact the newsletter’s image hosts. Detected one-pixel images remain excluded. Article links open separately. Reading cleanup uses conservative text/layout rules; **Email layout** retains the original formatting and controls when needed.
 
 Emails and Google access tokens are not saved to localStorage, IndexedDB or a server. Signing out clears the local session. The service worker caches the application shell, not Gmail responses; previously loaded messages do not survive a page reload.
 
@@ -69,7 +70,7 @@ The repository builds to `dist/` and can also be hosted on Cloudflare Pages or a
 
 ## Validation and limits
 
-Automated tests cover nested MIME/Unicode decoding, attachment-backed bodies, exact-label matching, source discovery/filtering, pagination failures and reader isolation. Mobile/desktop demo checks cover feed navigation and reading controls. The hosted client ID is configured. Live Google consent, mailbox loading and real iPhone sign-in still require verification in the owner’s browser.
+Automated tests cover nested MIME/Unicode decoding, attachment-backed bodies, exact-label matching, source discovery/filtering, pagination failures, reader isolation and newsletter cleanup. A real AlphaSignal edition was inspected locally from top to bottom at 375px and 402px mobile widths; checks also covered persistent preferences, outside-tap dismissal and horizontal overflow. That private fixture is excluded from the repository and deployment. The hosted client ID is configured. Live Google consent, mailbox loading and physical iPhone sign-in still require verification in the owner’s browser.
 
 No AI summaries, email writing/deleting, Gmail read-state changes, notifications, backend or offline email archive. Inline `cid:` attachments are not downloaded. Email encodings beyond UTF-8 are not specially decoded. Reading view can simplify unusual email layouts; email layout remains available.
 

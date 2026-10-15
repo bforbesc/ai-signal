@@ -19,20 +19,29 @@ function dateLabel(date: number) {
   if (day.toDateString() === today.toDateString()) return 'Today';
   return day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
-function Reader({ item, onClose, onNext, onPrevious, position }: { item: Newsletter; onClose: () => void; onNext?: () => void; onPrevious?: () => void; position: string }) {
+export function Reader({ item, onClose, onNext, onPrevious, position }: { item: Newsletter; onClose: () => void; onNext?: () => void; onPrevious?: () => void; position: string }) {
   const [font, setFont] = useState(() => Math.min(24, Math.max(16, Number(localStorage.getItem('ai-signal-font')) || 19)));
-  const [original, setOriginal] = useState(false);
-  const [images, setImages] = useState(false);
+  const [original, setOriginal] = useState(() => localStorage.getItem('ai-signal-layout') === 'email');
+  const [images, setImages] = useState(() => localStorage.getItem('ai-signal-images') === 'true');
   const [typeMenu, setTypeMenu] = useState(false);
   const doc = useMemo(() => readerDocument(item, original, images, font), [item, original, images, font]);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => { closeRef.current?.focus(); }, [item.id]);
+  const readerRef = useRef<HTMLElement>(null);
+  const typePanelRef = useRef<HTMLDivElement>(null);
+  const typeToggleRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { readerRef.current?.focus({ preventScroll: true }); }, [item.id]);
+  useEffect(() => {
+    if (!typeMenu) return;
+    const dismiss = (event: PointerEvent) => { if (event.target instanceof Node && !typePanelRef.current?.contains(event.target) && !typeToggleRef.current?.contains(event.target)) setTypeMenu(false); };
+    document.addEventListener('pointerdown', dismiss, true);
+    return () => document.removeEventListener('pointerdown', dismiss, true);
+  }, [typeMenu]);
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { if (typeMenu) setTypeMenu(false); else onClose(); } }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, [onClose, typeMenu]);
   function resize(value: number) { setFont(value); localStorage.setItem('ai-signal-font', String(value)); }
-  return <section className="reader" aria-label="Newsletter reader">
-    <header className="reader-toolbar"><button ref={closeRef} className="back-button" onClick={onClose} aria-label="Back to feed">←</button><span className="book-publisher">{item.sender}</span><button className="type-toggle" aria-label="Reading settings" aria-expanded={typeMenu} onClick={() => setTypeMenu(!typeMenu)}>Aa</button></header>
-    {typeMenu && <div className="type-panel" aria-label="Reading settings"><div className="type-controls"><span>Text size</span><button onClick={() => resize(Math.max(16, font - 1))} disabled={font <= 16 || original} aria-label="Smaller text">A−</button><span>{font}</span><button onClick={() => resize(Math.min(24, font + 1))} disabled={font >= 24 || original} aria-label="Larger text">A+</button></div><div className="reader-options"><button aria-pressed={!original} className={!original ? 'active' : ''} onClick={() => setOriginal(false)}>Reading view</button><button aria-pressed={original} className={original ? 'active' : ''} onClick={() => setOriginal(true)}>Email layout</button><button aria-pressed={images} onClick={() => setImages(!images)}>{images ? 'Hide images' : 'Load images'}</button></div></div>}
-    <div className="reader-heading"><h1>{item.subject}</h1></div>
+  function chooseLayout(value: boolean) { setOriginal(value); localStorage.setItem('ai-signal-layout', value ? 'email' : 'reading'); }
+  function toggleImages() { const value = !images; setImages(value); localStorage.setItem('ai-signal-images', String(value)); }
+  return <section ref={readerRef} tabIndex={-1} role="dialog" aria-modal="true" className="reader" aria-label="Newsletter reader">
+    <header className="reader-toolbar"><button className="back-button" onClick={onClose} aria-label="Back to feed">←</button><span className="book-publisher">{item.sender}</span><button ref={typeToggleRef} className="type-toggle" aria-label="Reading settings" aria-expanded={typeMenu} onClick={() => setTypeMenu(!typeMenu)}>Aa</button></header>
+    {typeMenu && <><div className="type-dismiss" aria-hidden="true" onPointerDown={() => setTypeMenu(false)}/><div ref={typePanelRef} className="type-panel" aria-label="Reading settings"><div className="type-controls"><span>Text size</span><button onClick={() => resize(Math.max(16, font - 1))} disabled={font <= 16 || original} aria-label="Smaller text">A−</button><span>{font}</span><button onClick={() => resize(Math.min(24, font + 1))} disabled={font >= 24 || original} aria-label="Larger text">A+</button></div><div className="reader-options" role="group" aria-label="Default view"><span>Default view</span><div><button aria-pressed={!original} className={!original ? 'active' : ''} onClick={() => chooseLayout(false)}>Reading view</button><button aria-pressed={original} className={original ? 'active' : ''} onClick={() => chooseLayout(true)}>Email layout</button></div></div><button className="image-preference" aria-pressed={images} onClick={toggleImages}><span>Images</span><span>{images ? 'On' : 'Off'}</span></button><p className="preferences-hint">Saved for all newsletters on this device.</p></div></>}
     <iframe key={item.id} title={`Full newsletter: ${item.subject}`} sandbox="allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" srcDoc={doc}/>
     <footer className="reader-footer"><button disabled={!onPrevious} onClick={onPrevious} aria-label="Previous newsletter">↑</button><span className="book-position">{position}</span><button disabled={!onNext} onClick={onNext} aria-label="Next newsletter">↓</button></footer>
   </section>;
