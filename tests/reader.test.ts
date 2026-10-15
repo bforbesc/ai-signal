@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { parseHTML } from 'linkedom';
+import { readerDocument } from '../src/lib/reader.ts';
+import { mapMessage } from '../src/lib/gmail.ts';
+const {document,Node,Element}=parseHTML('<html><body></body></html>');
+Object.assign(globalThis,{document,Node,Element});
+const item={...mapMessage({id:'test'}),html:'<style>body{font-size:4px}</style><table onclick="alert(1)"><tr><td class="h1">A clear headline</td></tr><tr><td><p>Readable writing.</p><script>alert(1)</script><img src="https://tracker.example/pixel" width="1" height="1"><a href="javascript:alert(1)">Bad</a><a href="https://example.com/article">Good</a><iframe src="https://example.com"></iframe></td></tr></table>'};
+test('reading view removes script, handlers, layout tables and unsafe links',()=>{const html=readerDocument(item,false,false,19); assert.ok(!html.includes('<script'));assert.ok(!html.includes('onclick'));assert.ok(!html.includes('javascript:'));assert.ok(!html.includes('<table'));assert.ok(html.includes('<h2>A clear headline</h2>'));assert.ok(html.includes('https://example.com/article'));});
+test('remote images are blocked by default and tracking pixels stay excluded when enabled',()=>{assert.ok(!readerDocument(item,false,false,19).includes('<img'));assert.ok(!readerDocument(item,false,true,19).includes('<img'));});
+test('email layout retains tables but remains scriptless',()=>{const html=readerDocument(item,true,false,19);assert.ok(html.includes('<table'));assert.ok(html.includes("script-src 'none'"));assert.ok(!html.includes('<script'));assert.ok(!html.includes('onclick'));});
+test('plain text is escaped and reader font is bounded',()=>{const html=readerDocument({...item,html:'',text:'<script>hello</script>'},false,false,100);assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('font-size:24px'));});

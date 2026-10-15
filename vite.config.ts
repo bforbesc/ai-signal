@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'AI Signal',
         short_name: 'AI Signal',
         description: 'A scrollable reader for AI newsletters from your Gmail.',
-        theme_color: '#0a0a0a',
-        background_color: '#0a0a0a',
+        theme_color: '#fcfbf8',
+        background_color: '#fcfbf8',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -44,6 +44,7 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
-    host: true,
+    host: '127.0.0.1',
+    watch: { usePolling: true },
   },
 });

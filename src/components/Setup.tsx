@@ -1,0 +1,24 @@
+import { useState } from 'react';
+import { getClientId, saveClientId } from '../lib/auth';
+export function Setup({ onClose, onSave }: { onClose: () => void; onSave: () => void }) {
+  const [value, setValue] = useState(getClientId());
+  const [error, setError] = useState('');
+  return <div className="modal-shade"><section role="dialog" aria-modal="true" aria-labelledby="setup-title" className="setup-panel">
+    <button className="close-button" onClick={onClose} aria-label="Close setup">×</button>
+    <p className="eyebrow">ONE-TIME SETUP</p><h2 id="setup-title">Connect your reading feed.</h2>
+    <p>Google needs a web client ID for this address. It is free for standard personal use.</p>
+    <ol>
+      <li>Open <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">Google Cloud</a> and create a project named AI Signal.</li>
+      <li>Enable <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noreferrer">Gmail API</a>.</li>
+      <li>In Google Auth Platform, set the app name, choose External, keep Testing, and add your Gmail address as a test user. Add the <code>gmail.readonly</code> scope under Data Access.</li>
+      <li>Create a client of type <strong>Web application</strong>. Under Authorized JavaScript origins, add:<code className="origin">{window.location.origin}</code></li>
+      <li>Paste the client ID below. You do not need an API key, client secret, or paid Apple account.</li>
+    </ol>
+    <form onSubmit={event => { event.preventDefault(); if (!/^[a-zA-Z0-9-]+\.apps\.googleusercontent\.com$/.test(value.trim())) { setError('Paste the complete web client ID ending in .apps.googleusercontent.com.'); return; } saveClientId(value); onSave(); }}>
+      <label htmlFor="client-id">Google web client ID</label><input id="client-id" value={value} onChange={event => setValue(event.target.value)} placeholder="123456789-abc.apps.googleusercontent.com" autoComplete="off" spellCheck={false}/>
+      {error && <p role="alert" className="form-error">{error}</p>}
+      <button className="primary" type="submit">Save connection settings</button>
+    </form>
+    <p className="fine-print">The client ID is a public identifier, saved only in this browser. Access tokens stay in memory. Google grants read-only access to your mailbox; AI Signal fetches only _AI_SIGNAL.</p>
+  </section></div>;
+}
