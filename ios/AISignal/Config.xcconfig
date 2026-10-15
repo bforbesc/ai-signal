@@ -1,0 +1,4 @@
+// Use the iOS OAuth client created for APP_BUNDLE_ID. Client IDs are public.
+APP_BUNDLE_ID = com.bforbesc.aisignal
+GOOGLE_CLIENT_ID = YOUR_IOS_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.YOUR_IOS_CLIENT_ID

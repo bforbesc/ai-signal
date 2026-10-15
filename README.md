@@ -1,5 +1,7 @@
 # AI Signal
 
+**Native iPhone version:** the SwiftUI app is in [`ios/AISignal`](ios/AISignal/README.md). Open `ios/AISignal/AISignal.xcodeproj` for Xcode/device installation or TestFlight. It reads the exact `_AI_SIGNAL` Gmail label. The existing web scaffold below is retained.
+
 A scrollable, social-feed-style PWA for reading AI newsletters (Alpha Signal + The Batch) from a Gmail label. Installs to the iPhone home screen — no App Store.
 
 **Status:** v1 scaffold. Steps 1–3 of the build plan are done (Vite + React + TS + Tailwind + PWA shell + Google sign-in smoke test). Feed and reader come next.

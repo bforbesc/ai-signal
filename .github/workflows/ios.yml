@@ -1,0 +1,20 @@
+name: iOS build
+on:
+  pull_request:
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+jobs:
+  simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native app for iOS Simulator
+        run: >-
+          xcodebuild -project ios/AISignal/AISignal.xcodeproj
+          -scheme AISignal -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Verify Gmail message decoding
+        run: |
+          swiftc ios/AISignal/AISignal/Models.swift ios/AISignal/Tests/main.swift -o /tmp/ai-signal-model-tests
+          /tmp/ai-signal-model-tests
