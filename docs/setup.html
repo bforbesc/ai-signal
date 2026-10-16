@@ -17,7 +17,7 @@
     <div class="notice"><p><strong>Before you start:</strong> you need a GitHub account, a Google account, and access to Codex with the Sites plugin. The current server depends on Sites authentication. A GitHub Pages upload alone cannot run the reader.</p></div>
     <nav class="contents" aria-label="Guide sections"><a href="#copy">1. Your copy</a><a href="#google">2. Google Cloud</a><a href="#connection">3. Connection</a><a href="#read">4. Start reading</a><a href="#help">Common fixes</a></nav>
 
-    <h2 id="copy">1. Create your private copy.</h2>
+    <h2 id="copy">1. Create your own reader.</h2>
     <p><a href="https://github.com/bforbesc/ai-signal/fork">Fork the repository</a> into your GitHub account and open your fork in Codex. Enable the Sites plugin in your environment. If you do not have access to it, you can still <a href="https://github.com/bforbesc/ai-signal#try-the-sample-locally">try the sample locally</a>; deploying on another host needs authentication work first.</p>
     <p>Ask Codex to prepare a new installation using the prompt below. It covers the hosting changes needed for your copy.</p>
     <details><summary>Show the setup prompt for Codex</summary>
@@ -29,7 +29,7 @@ Publish my fork's docs/ directory with GitHub Pages. Update its app URLs, reposi
 
 Prepare GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_ENCRYPTION_KEY and APP_ORIGIN as server runtime settings. Store secrets only in protected hosting settings, never in Git or VITE_ variables. Give me my exact app origin, public page URLs and Google callback URL so I can complete Google Cloud setup and consent myself.</code></pre>
     </details>
-    <p>Keep the reader <strong>private to you</strong>. Publish the information/privacy pages separately. In GitHub, your fork's <strong>Settings → Pages</strong> can publish from <strong>main → /docs</strong>. Update those pages for your own installation before using them in Google Cloud.</p>
+    <p>Your source fork can remain public. Set the <strong>reader's audience to private</strong> in Sites and keep credentials in protected hosting settings. Publish the information/privacy pages separately. In GitHub, your fork's <strong>Settings → Pages</strong> can publish from <strong>main → /docs</strong>. Update those pages for your own installation before using them in Google Cloud.</p>
     <p>Your new app origin is the address of your reader, with no path. The examples below use <code>https://your-reader.example.com</code>; replace it with your actual URL.</p>
 
     <h2 id="google">2. Configure your Google account.</h2>

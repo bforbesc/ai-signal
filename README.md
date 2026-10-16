@@ -30,7 +30,7 @@ This is an **open-source personal app template**. You deploy your own copy and c
 
 The current hosting setup uses **Codex with the Sites plugin**. You also need a Google account, a Google Cloud project with Gmail API enabled, and your own web OAuth client. Hosting and account requirements depend on your provider; this is not an App Store app.
 
-1. **Create a private copy.** Fork this repository and follow the [setup guide](https://bforbesc.github.io/ai-signal/setup.html). Create a new Sites project; do not reuse the author's project ID or Google configuration.
+1. **Deploy your own reader.** Fork this repository and follow the [setup guide](https://bforbesc.github.io/ai-signal/setup.html). Create a new private Sites project; do not reuse the author's project ID or Google configuration. Your source fork can remain public.
 2. **Connect your Gmail.** Configure your OAuth client and protected server settings, then tap **Connect Gmail** in your reader.
 3. **Label your newsletters.** In Gmail, create `_AI_SIGNAL` and apply it to the editions you want to read. A Gmail filter can label future emails automatically.
 4. **Read on your phone.** Open your reader in Chrome or Safari and use **Share → Add to Home Screen**.
