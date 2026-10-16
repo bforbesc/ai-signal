@@ -82,6 +82,8 @@ The `docs/` directory is the public information/privacy site, published with Git
 
 Open the hosted link in **Chrome → Share → Add to Home Screen → Add**. Complete Sites sign-in and Connect Gmail in the browser you will use. The Home Screen app and Chrome can have separate app sign-in sessions; each authenticated session restores the same owner-bound Gmail connection. The loopback development URL is not the iPhone deployment.
 
+The Home Screen icon is a cream signal mark on green, matching the reader. Its 180px iPhone icon and 192/512px manifest icons are real, opaque PNGs rendered from `public/icon.svg`. Identical copies in `docs/` let the installer fetch the public icon without a Sites sign-in cookie; the reader itself remains private. If an older installation shows “A”, remove its Home Screen shortcut, reload the actual reader in your browser, and add it again. The source icon has a full square background so iOS can apply its own corner shape.
+
 ## Privacy and limits
 
 See the [privacy notice](PRIVACY.md) for the deployed reader's data handling and connection-deletion controls. Google Cloud branding and app verification are separate from the reader's private Sites audience; do not make the reader public to change OAuth publishing status.
