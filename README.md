@@ -2,7 +2,7 @@
 
 **Read your Gmail newsletters like a book.**
 
-AI Signal turns the Gmail label `_AI_SIGNAL` into a quiet reading feed. Open an edition, adjust the text, and move to the next. It works in a browser and can live on your iPhone Home Screen.
+AI Signal brings **multiple newsletters, on any topic**, from Gmail into one quiet reading feed. Apply the `_AI_SIGNAL` label to the newsletters you want, read them together, or filter by publication. It works in a browser and can live on your iPhone Home Screen.
 
 [Overview](https://bforbesc.github.io/ai-signal/) · [Set up your own](https://bforbesc.github.io/ai-signal/setup.html) · [Development](docs/DEVELOPMENT.md) · [Privacy](PRIVACY.md)
 
@@ -15,7 +15,7 @@ AI Signal turns the Gmail label `_AI_SIGNAL` into a quiet reading feed. Open an 
 
 ## What it does
 
-- Collects newsletters from one Gmail label, newest first.
+- Combines multiple newsletter publications from one Gmail account, newest first.
 - Detects publications automatically and lets you filter by newsletter.
 - Offers a clean reading view, with the original email layout available.
 - Remembers text size, default view and image preferences on your device.
@@ -23,6 +23,12 @@ AI Signal turns the Gmail label `_AI_SIGNAL` into a quiet reading feed. Open an 
 - Restores your Gmail connection when you return to a configured private deployment.
 
 You read the original writing. There are no generated summaries, email sending or notifications.
+
+## Why I built it
+
+I wanted a smaller personal alternative to [Meco](https://meco.app/), focused on the part I needed: a Gmail newsletter feed with comfortable reading. I use it for AI news, which is where the name comes from. You can use it for research, business, culture or any other newsletter topic, with one publication or several.
+
+AI Signal is an independent project, unaffiliated with Meco. The label is currently fixed as `_AI_SIGNAL`, including for newsletters about other topics. Email layouts vary; see the [current limits](docs/DEVELOPMENT.md#current-limits).
 
 ## Set up your own reader
 

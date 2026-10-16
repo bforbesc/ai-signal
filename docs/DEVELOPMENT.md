@@ -91,6 +91,8 @@ For a deployment, also test your own Google consent flow, load an edition, open 
 
 Use fictional content for public screenshots. Keep real-email fixtures under ignored `.local-qa/` or outside the checkout, and remove them after testing. The secret scanner reports finding categories and locations without printing credentials; `--history` adds reachable Git history and `--bundle` adds `dist/client`.
 
+Use your GitHub no-reply address for public commits if you want to keep your personal email address out of author/committer metadata. A clean source-file scan does not check Git author identities.
+
 ## Current limits
 
-The label name is exactly `_AI_SIGNAL`. There is no inbox fallback or label picker. Publication grouping uses `List-ID` or the sender address. Inline `cid:` images and non-UTF-8 encodings are not specially handled. Images are optional and off by default. There is no offline email archive, generated summary, mail editing or native App Store package.
+The reader supports multiple newsletter publications on any topic from one connected Gmail account. Publication grouping uses `List-ID` or the sender address; there is no publisher allowlist. The label name is exactly `_AI_SIGNAL`. There is no inbox fallback or label picker. Inline `cid:` images and non-UTF-8 encodings are not specially handled, and cleanup can vary with email formatting. Images are optional and off by default. There is no offline email archive, generated summary, mail editing or native App Store package.
