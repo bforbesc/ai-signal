@@ -36,7 +36,9 @@ You read the original writing. There are no generated summaries, email sending o
 
 ## Why I built it
 
-I wanted a smaller personal alternative to [Meco](https://meco.app/), focused on the part I needed: a Gmail newsletter feed with comfortable reading. I use it for AI news, which is where the name comes from. You can use it for research, business, culture or any other newsletter topic, with one publication or several.
+I built AI Signal for myself because I didn't want to pay for [Meco](https://meco.app/). I only needed a Gmail newsletter feed and a comfortable place to read, so I made a small personal reader around those features.
+
+I use it for AI news, which is where the name comes from. You can use it for research, business, culture or any other newsletter topic, with one publication or several.
 
 AI Signal is an independent project, unaffiliated with Meco. The label is currently fixed as `_AI_SIGNAL`, including for newsletters about other topics. Email layouts vary; see the [current limits](docs/DEVELOPMENT.md#current-limits).
 
