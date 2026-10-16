@@ -59,6 +59,8 @@ The original deployment's public OAuth ID and origin remain compatibility defaul
 
 ## Deploy your own copy
 
+GitHub Actions validates the source, GitHub Pages publishes the documentation, and Sites publishes the private reader. When retiring an older Git-linked Cloudflare Worker, disable its automatic production and preview builds in the Worker's **Settings → Builds** to stop obsolete deployment checks.
+
 Use the Sites plugin's supported source/build/publish workflow. For a new installation:
 
 - Create a **new private Site** in your own account. Replace `.openai/hosting.json`'s original `project_id` with the new ID returned by Sites. A fork does not create a new hosting identity by itself.
