@@ -1,23 +1,34 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI Signal — privacy notice</title><meta name="description" content="How the personal AI Signal reader accesses, uses, stores and deletes Gmail data."><link rel="stylesheet" href="site.css"><link rel="icon" type="image/svg+xml" href="icon.svg"><link rel="apple-touch-icon" sizes="180x180" href="icons/ai-signal-180.png"></head>
-<body><main>
-<nav><a href="./">AI Signal</a></nav>
-<h1>Privacy notice</h1>
-<p>Updated 16 October 2026. This notice describes the personal AI Signal deployment linked on our <a href="./">home page</a>. Other deployments of this public source code have their own operators and settings.</p>
-<h2>Gmail access</h2>
-<p>AI Signal displays newsletters from the exact Gmail label <code>_AI_SIGNAL</code>. Google grants the app read-only mailbox access; Google does not offer an OAuth permission restricted to one label. The application enforces that label when listing and opening messages. It also reads the connected account's email address to identify the connection. It cannot send, modify or delete mail with this permission.</p>
-<h2>Stored connection</h2>
-<p>The hosted reader is private to its owner and uses Sites sign-in. The server associates the stable Sites visitor ID with an encrypted Gmail connection in its database. The encrypted record contains Google access and refresh tokens and the connected email address. The encryption key and OAuth client secret are kept in hosting secret settings, separately from the public repository and browser bundle. The browser receives connection status rather than Google tokens. A legacy browser-only fallback, when server credentials are absent, holds a short-lived access token only in memory.</p>
-<h2>Email content and device storage</h2>
-<p>Email content passes through the hosting server to display the feed. AI Signal does not archive emails in its database or browser storage. Content remains in memory while being read. Device storage saves reading preferences and public connection settings. The service worker does not cache authenticated pages, Gmail content or tokens. Hosting providers process requests and may retain operational logs under their own policies.</p>
-<h2>How data is used</h2>
-<p>AI Signal does not sell Google user data, use it for advertising, or send it to an AI model. Its use and transfer of information received from Google APIs follows the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. The app uses Google and the Sites hosting infrastructure to provide the reader.</p>
-<h2>Images and links</h2>
-<p>Newsletter scripts, forms and embedded frames are removed from displayed email HTML. Remote images are off by default. Enabling images contacts their external hosts, which can receive your IP address and image-request information. Opening an article link visits that publisher's website under its own policies.</p>
-<h2>Disconnecting and deleting data</h2>
-<p><strong>Sign out</strong> deletes the active visitor's saved Gmail connection and pending authorization states from the app database. It does not delete mail or revoke the Google-side authorization. You can separately remove AI Signal's access through <a href="https://myaccount.google.com/connections">Google Account connections</a>. You can clear device reading preferences using your browser's site-data controls. Infrastructure backups and operational logs are subject to the hosting provider's retention rules.</p>
-<h2>Contact</h2>
-<p>For questions about this personal deployment, contact its owner through the <a href="https://github.com/bforbesc/ai-signal">repository</a>. Do not post email content, access tokens, client secrets or downloaded OAuth JSON in a public issue.</p>
-<footer><a href="./">AI Signal home</a> · <a href="https://github.com/bforbesc/ai-signal">Source code</a></footer>
-</main></body></html>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Signal — privacy notice</title>
+  <meta name="description" content="How the personal AI Signal reader accesses, uses, stores and deletes Gmail data.">
+  <link rel="canonical" href="https://bforbesc.github.io/ai-signal/privacy.html">
+  <link rel="stylesheet" href="site.css"><link rel="icon" type="image/svg+xml" href="icon.svg"><link rel="apple-touch-icon" sizes="180x180" href="icons/ai-signal-180.png">
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="./"><img src="icons/ai-signal-32.png" width="28" height="28" alt="">AI Signal<span>.</span></a><nav aria-label="Main navigation"><a href="setup.html">Setup guide</a><a href="https://github.com/bforbesc/ai-signal">GitHub <span aria-hidden="true">↗</span></a></nav></header>
+  <main class="document">
+    <p class="eyebrow">Your data</p>
+    <h1>Privacy notice</h1>
+    <p class="updated">Updated 16 October 2026</p>
+    <p>This notice covers Bernardo Forbes Costa&#x27;s <a href="https://ai-signal-reader.opalash6.chatgpt.site/">original private reader</a>. The public overview and setup pages show fictional sample content and do not connect to Gmail. People deploying their own copy are responsible for their own settings, privacy notice and contact details.</p>
+    <h2>Gmail access</h2>
+    <p>AI Signal displays newsletters from the exact Gmail label <code>_AI_SIGNAL</code>. Google grants the app read-only mailbox access; Google does not offer an OAuth permission restricted to one label. The application enforces that label when listing and opening messages. It also reads the connected account&#x27;s email address to identify the connection. It cannot send, modify or delete mail with this permission.</p>
+    <h2>Saved connection</h2>
+    <p>The hosted reader is private to its owner and uses Sites sign-in. The server associates the stable Sites visitor ID with an encrypted Gmail connection in its database. The encrypted record contains Google access and refresh tokens and the connected email address. The encryption key and OAuth client secret are kept in hosting secret settings, separately from the public repository and browser bundle. The browser receives connection status rather than Google tokens. A legacy browser-only fallback, when server credentials are absent, holds a short-lived access token only in memory.</p>
+    <h2>Email content and device storage</h2>
+    <p>Email content passes through the hosting server to display the feed. AI Signal does not archive emails in its database or browser storage. Content remains in memory while being read. Device storage saves reading preferences and public connection settings. The service worker does not cache authenticated pages, Gmail content or tokens. Hosting providers process requests and may retain operational logs under their own policies.</p>
+    <h2>How data is used</h2>
+    <p>AI Signal does not sell Google user data, use it for advertising, or send it to an AI model. Its use and transfer of information received from Google APIs follows the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. The app uses Google and the Sites hosting infrastructure to provide the reader.</p>
+    <h2>Images and links</h2>
+    <p>Newsletter scripts, forms and embedded frames are removed from displayed email HTML. Remote images are off by default. Enabling images contacts their external hosts, which can receive your IP address and image-request information. Opening an article link visits that publisher&#x27;s website under its own policies.</p>
+    <h2>Disconnecting and deleting data</h2>
+    <p><strong>Sign out</strong> deletes the active visitor&#x27;s saved Gmail connection and pending authorization states from the app database. It does not delete mail or revoke the Google-side authorization. You can separately remove AI Signal&#x27;s access through <a href="https://myaccount.google.com/connections">Google Account connections</a>. You can clear device reading preferences using your browser&#x27;s site-data controls. Infrastructure backups and operational logs are subject to the hosting provider&#x27;s retention rules.</p>
+    <h2>Contact</h2>
+    <p>For questions about Bernardo Forbes Costa&#x27;s original personal installation, contact him through the <a href="https://github.com/bforbesc/ai-signal">repository</a>. Do not post email content, access tokens, client secrets or downloaded OAuth JSON in a public issue. If you use another person&#x27;s deployment, contact its operator.</p>
+  </main>
+  <footer class="site-footer"><span>AI Signal · Personal newsletter reading</span><nav aria-label="Footer navigation"><a href="./">Overview</a><a href="setup.html">Setup</a><a href="https://github.com/bforbesc/ai-signal">Source</a></nav></footer>
+</body>
+</html>

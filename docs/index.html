@@ -1,14 +1,68 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI Signal — a quiet newsletter reader</title><meta name="description" content="A personal, Kindle-inspired reader for newsletters in the Gmail label _AI_SIGNAL."><link rel="stylesheet" href="site.css"><link rel="icon" type="image/svg+xml" href="icon.svg"><link rel="apple-touch-icon" sizes="180x180" href="icons/ai-signal-180.png"></head>
-<body><main>
-<nav>AI Signal</nav>
-<h1>A quiet place<br>for your newsletters.</h1>
-<p class="intro">AI Signal is a personal, Kindle-inspired reader for emails in the Gmail label <code>_AI_SIGNAL</code>.</p>
-<p>Read the newest editions in one feed, filter by newsletter, and choose your text size and reading layout. The reader works in your iPhone browser and can be added to the Home Screen.</p>
-<h2>Your connection</h2>
-<p>The app requests read-only Gmail access to display labelled newsletters. The private hosted reader saves an encrypted Google connection on its server so you can return without signing in to Gmail each time. It does not send, change or delete email.</p>
-<p><a class="button" href="https://ai-signal-reader.opalash6.chatgpt.site/">Open private reader</a></p>
-<p>The reader requires its owner's Sites sign-in. This public page contains app information only; it has no access to your Gmail.</p>
-<footer><a href="privacy.html">Privacy notice</a> · <a href="https://github.com/bforbesc/ai-signal">Source code and documentation</a></footer>
-</main></body></html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Signal — a quiet Gmail newsletter reader</title>
+  <meta name="description" content="Turn a Gmail label into a quiet reading feed. A personal newsletter reader for your browser and iPhone, with a guide to setting up your own private copy.">
+  <link rel="canonical" href="https://bforbesc.github.io/ai-signal/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="AI Signal — newsletters, without the noise">
+  <meta property="og:description" content="A quiet Gmail newsletter reader. Comfortable reading, one feed, and your own private copy. Explore the preview and setup guide.">
+  <meta property="og:url" content="https://bforbesc.github.io/ai-signal/">
+  <meta property="og:image" content="https://bforbesc.github.io/ai-signal/images/social-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="AI Signal's sample newsletter feed and reading view on a warm paper background">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#fcfbf8">
+  <link rel="stylesheet" href="site.css">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/ai-signal-180.png">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./"><img src="icons/ai-signal-32.png" width="28" height="28" alt="">AI Signal<span>.</span></a>
+    <nav aria-label="Main navigation"><a href="setup.html">Setup guide</a><a href="https://github.com/bforbesc/ai-signal">GitHub <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">A personal newsletter reader</p>
+        <h1 id="hero-title">Newsletters,<br>without the noise.</h1>
+        <p class="intro">Turn a Gmail label into a quiet reading feed. Open an edition, get comfortable, and read one thing at a time.</p>
+        <div class="actions"><a class="button" href="setup.html">Set up your own <span aria-hidden="true">→</span></a><a class="secondary-link" href="https://github.com/bforbesc/ai-signal">Explore the code</a></div>
+        <p class="setup-note">Bring your own Gmail account and private deployment. The current setup uses Codex with the Sites plugin.</p>
+      </div>
+      <div class="preview" aria-label="App preview">
+        <div class="preview-pair">
+          <figure><figcaption>Your feed</figcaption><a href="images/feed-preview.jpg" aria-label="View the full-size sample feed"><img src="images/feed-preview.jpg" width="402" height="874" alt="A newest-first feed of fictional sample newsletters"></a></figure>
+          <figure><figcaption>Your reading space</figcaption><a href="images/reader-preview.jpg" aria-label="View the full-size sample reading view"><img src="images/reader-preview.jpg" width="402" height="874" alt="An edition with serif body text and simple reading controls"></a></figure>
+        </div>
+        <p class="preview-caption">Fictional sample editions. No private email is shown.</p>
+      </div>
+    </section>
+    <section class="section" aria-labelledby="how-title">
+      <div class="section-heading"><p class="eyebrow">A simpler reading habit</p><h2 id="how-title">One label. A few good newsletters.</h2></div>
+      <ol class="steps">
+        <li><span class="step-number">01</span><h3>Label it in Gmail.</h3><p>Create <code>_AI_SIGNAL</code> and add the editions you want to read. A Gmail filter can collect future emails for you.</p></li>
+        <li><span class="step-number">02</span><h3>Open your feed.</h3><p>See the newest editions together. Filter by publication when you want to catch up on one newsletter.</p></li>
+        <li><span class="step-number">03</span><h3>Read at your pace.</h3><p>Choose your text size and reading view. Your preferences stay saved, and article links open separately.</p></li>
+      </ol>
+    </section>
+    <section class="section split-section" aria-labelledby="reading-title">
+      <div><p class="eyebrow">Built around the writing</p><h2 id="reading-title">More room<br>for the writing.</h2></div>
+      <div class="section-copy"><p>The reading view removes common signup menus and administrative footers. Warm paper and serif text keep the focus on the edition.</p><p>Prefer the publisher's formatting? Switch to Email layout. Text size, your default view and image settings are remembered on your device.</p><p>Read the original writing, without generated summaries. Use your browser, or add your reader to the iPhone Home Screen.</p></div>
+    </section>
+    <section class="section split-section" aria-labelledby="privacy-title">
+      <div><p class="eyebrow">Your account, your copy</p><h2 id="privacy-title">A private place<br>for your newsletters.</h2></div>
+      <div class="section-copy"><p>You connect your own Google account to your own deployment. Google grants read-only mailbox access; the app limits its reads to <code>_AI_SIGNAL</code>.</p><p>A configured server keeps your Google connection encrypted so access can renew. Email content is not archived, and remote images start off.</p><a class="secondary-link" href="privacy.html">Read the privacy notice <span aria-hidden="true">→</span></a></div>
+    </section>
+    <section class="setup-callout" aria-labelledby="setup-title">
+      <div><p class="eyebrow">Open source · MIT licence</p><h2 id="setup-title">Start with your own reader.</h2><p>Use, adapt and share your own copy. The guide walks through a private Sites deployment, your Google Cloud settings and the first Gmail connection.</p></div>
+      <a class="button" href="setup.html">Open the setup guide <span aria-hidden="true">→</span></a>
+    </section>
+  </main>
+  <footer class="site-footer"><span>AI Signal · By <a href="https://github.com/bforbesc">Bernardo Forbes Costa</a></span><nav aria-label="Footer navigation"><a href="setup.html">Setup</a><a href="privacy.html">Privacy</a><a href="https://github.com/bforbesc/ai-signal/blob/main/LICENSE">MIT licence</a><a href="https://github.com/bforbesc/ai-signal">Source</a></nav></footer>
+</body>
+</html>

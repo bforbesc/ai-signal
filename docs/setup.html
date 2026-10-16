@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up your own AI Signal</title>
+  <meta name="description" content="A step-by-step guide to your own private AI Signal reader: hosting, Google Cloud, Gmail connection and iPhone Home Screen setup.">
+  <link rel="canonical" href="https://bforbesc.github.io/ai-signal/setup.html">
+  <meta property="og:type" content="website"><meta property="og:title" content="Set up your own AI Signal"><meta property="og:description" content="Your Gmail account, your private reader. Follow the personal setup guide."><meta property="og:url" content="https://bforbesc.github.io/ai-signal/setup.html"><meta property="og:image" content="https://bforbesc.github.io/ai-signal/images/social-card.png"><meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="site.css"><link rel="icon" type="image/svg+xml" href="icon.svg"><link rel="apple-touch-icon" sizes="180x180" href="icons/ai-signal-180.png">
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="./"><img src="icons/ai-signal-32.png" width="28" height="28" alt="">AI Signal<span>.</span></a><nav aria-label="Main navigation"><a href="./">Overview</a><a href="https://github.com/bforbesc/ai-signal">GitHub <span aria-hidden="true">↗</span></a></nav></header>
+  <main class="document">
+    <p class="eyebrow">Personal setup guide</p>
+    <h1>Your Gmail.<br>Your own reader.</h1>
+    <p class="lead">Create a private copy of AI Signal, connect your Gmail account, and read the newsletters you label. This guide is for one person's reader.</p>
+    <div class="notice"><p><strong>Before you start:</strong> you need a GitHub account, a Google account, and access to Codex with the Sites plugin. The current server depends on Sites authentication. A GitHub Pages upload alone cannot run the reader.</p></div>
+    <nav class="contents" aria-label="Guide sections"><a href="#copy">1. Your copy</a><a href="#google">2. Google Cloud</a><a href="#connection">3. Connection</a><a href="#read">4. Start reading</a><a href="#help">Common fixes</a></nav>
+
+    <h2 id="copy">1. Create your private copy.</h2>
+    <p><a href="https://github.com/bforbesc/ai-signal/fork">Fork the repository</a> into your GitHub account and open your fork in Codex. Enable the Sites plugin in your environment. If you do not have access to it, you can still <a href="https://github.com/bforbesc/ai-signal#try-the-sample-locally">try the sample locally</a>; deploying on another host needs authentication work first.</p>
+    <p>Ask Codex to prepare a new installation using the prompt below. It covers the hosting changes needed for your copy.</p>
+    <details><summary>Show the setup prompt for Codex</summary>
+    <pre><code>Set up this repository as my own private AI Signal reader using Sites.
+
+Create a NEW Site in my account. Do not reuse the author's project_id, Google client, or deployed URLs. Keep the DB binding and the Sites authentication integration.
+
+Publish my fork's docs/ directory with GitHub Pages. Update its app URLs, repository links, privacy contact, screenshots and public icon URLs for my copy. Replace the original deployment's OAuth/origin defaults with my configuration.
+
+Prepare GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_ENCRYPTION_KEY and APP_ORIGIN as server runtime settings. Store secrets only in protected hosting settings, never in Git or VITE_ variables. Give me my exact app origin, public page URLs and Google callback URL so I can complete Google Cloud setup and consent myself.</code></pre>
+    </details>
+    <p>Keep the reader <strong>private to you</strong>. Publish the information/privacy pages separately. In GitHub, your fork's <strong>Settings → Pages</strong> can publish from <strong>main → /docs</strong>. Update those pages for your own installation before using them in Google Cloud.</p>
+    <p>Your new app origin is the address of your reader, with no path. The examples below use <code>https://your-reader.example.com</code>; replace it with your actual URL.</p>
+
+    <h2 id="google">2. Configure your Google account.</h2>
+    <p>Open <a href="https://console.cloud.google.com/">Google Cloud Console</a>, create your own project, and enable <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com">Gmail API</a> for that project.</p>
+    <h3>Google Auth Platform</h3>
+    <ol>
+      <li><strong>Branding:</strong> enter your app name, support email and developer contact email. Use your own public information page and privacy notice for the website links. Add their domains and your reader's domain under Authorised domains, without <code>https://</code> or paths.</li>
+      <li><strong>Audience:</strong> choose External for a personal Google account. Add your own Gmail address as a test user while configuring the app.</li>
+      <li><strong>Data access:</strong> add only <code>https://www.googleapis.com/auth/gmail.readonly</code>.</li>
+      <li><strong>Clients:</strong> create an OAuth client with type <strong>Web application</strong>, using the values below.</li>
+    </ol>
+    <table><thead><tr><th>Google field</th><th>Value for your installation</th></tr></thead><tbody>
+      <tr><td>Authorised JavaScript origins</td><td><code>https://your-reader.example.com</code></td></tr>
+      <tr><td>Authorised redirect URIs</td><td><code>https://your-reader.example.com/api/auth/google/callback</code></td></tr>
+      <tr><td>Application home page</td><td>Your fork's public information page</td></tr>
+      <tr><td>Application privacy policy link</td><td>Your fork's public privacy page</td></tr>
+    </tbody></table>
+    <p>The callback belongs to the <strong>reader</strong>, not to GitHub Pages. Save the client ID and client secret securely. Keep a downloaded OAuth JSON file outside your repository.</p>
+    <p>Then go to <strong>Audience → Publish app</strong> and confirm the status is <strong>In production</strong>. Google's <a href="https://support.google.com/cloud/answer/15549945?hl=en">Testing status expires Gmail authorizations after seven days</a>. Publishing the OAuth configuration does not make your private reader or mailbox public.</p>
+    <p>Google documents a <a href="https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification#personal-use">verification exception for personal use</a>; an unverified-app warning and user cap may remain. Only authorize the app you created and the read-only permission you expect. Turning this into a service for unrelated users requires a separate review of Google's requirements.</p>
+    <div class="notice"><p><strong>About the permission:</strong> Google does not offer a label-specific OAuth grant. You grant read-only mailbox access; AI Signal's server restricts its reads to <code>_AI_SIGNAL</code>. It cannot send, edit or delete email with that permission.</p></div>
+
+    <h2 id="connection">3. Save your connection settings.</h2>
+    <p>Configure these values in your own Site's server environment. Codex can help using protected hosting settings; do not paste secret values into source files or public issues.</p>
+    <table><thead><tr><th>Setting</th><th>What to use</th></tr></thead><tbody>
+      <tr><td><code>APP_ORIGIN</code></td><td>Your exact reader origin, without a path or trailing slash</td></tr>
+      <tr><td><code>GOOGLE_CLIENT_ID</code></td><td>Your web OAuth client ID; this is public</td></tr>
+      <tr><td><code>GOOGLE_CLIENT_SECRET</code></td><td>Your web OAuth client secret; store as a secret</td></tr>
+      <tr><td><code>APP_ENCRYPTION_KEY</code></td><td>A random 32-byte base64/base64url key; store as a secret and keep it stable</td></tr>
+    </tbody></table>
+    <p>Redeploy after saving these settings. Open your private reader, complete its Sites sign-in, and tap <strong>Connect Gmail</strong>. Complete Google's consent yourself. The configured server stores an encrypted connection and renews short-lived access automatically.</p>
+    <p>If you connected while Google was still in Testing, use <strong>Sign out</strong> in AI Signal and reconnect once after switching to In production. Google can still require reconnection if access is revoked or a grant expires for another reason.</p>
+
+    <h2 id="read">4. Add newsletters and start reading.</h2>
+    <ol>
+      <li>In Gmail, create the label <code>_AI_SIGNAL</code>, including the leading underscore.</li>
+      <li>Apply it to the newsletter emails you want. To label future editions, create a Gmail filter for each sender or newsletter.</li>
+      <li>Refresh AI Signal. Open an edition, use <strong>Aa</strong> for text and view preferences, and use the arrows to move between editions.</li>
+      <li>On iPhone, open your reader in Chrome or Safari, then use <strong>Share → Add to Home Screen</strong>. In Safari, enable Open as Web App if offered. No Apple Developer membership is needed.</li>
+      <li>Close and reopen the reader to check that the Gmail connection restores.</li>
+    </ol>
+    <p>Newsletter filters appear automatically as publications are detected. Reading preferences stay on that device. A Home Screen app and your browser can have separate app sign-in sessions, but the same Sites identity restores the saved Gmail connection.</p>
+
+    <h2 id="help">Common fixes</h2>
+    <details><summary>Google says the redirect URI does not match.</summary><p>Copy the full callback from your own deployment into the web client's Authorised redirect URIs. Check the scheme, hostname, port and <code>/api/auth/google/callback</code> path exactly. Use your reader URL, not your public docs URL.</p></details>
+    <details><summary>Publish app is disabled.</summary><p>Save Branding with the app name, contact emails, homepage, privacy-policy URL and required authorised domains. The website links must describe your copy and its data handling. Review <a href="https://support.google.com/cloud/answer/15549049?hl=en">Google's Branding guidance</a>, then return to Audience.</p></details>
+    <details><summary>The feed is empty.</summary><p>Check the connected Gmail account and the exact label name <code>_AI_SIGNAL</code>. Apply it to individual newsletter messages, then refresh. AI Signal does not fall back to your inbox.</p></details>
+    <details><summary>I lose the Gmail connection after closing.</summary><p>Confirm the server settings, D1 binding and deployment are configured. A browser-only fallback does not retain login. Check that Google is In production, then reconnect once. Keep <code>APP_ENCRYPTION_KEY</code> stable.</p></details>
+    <details><summary>The Home Screen icon shows a letter.</summary><p>Load the reader fully in your browser, remove the older Home Screen shortcut, and add it again. Your copy's public PNG icon URLs must be reachable without a sign-in cookie.</p></details>
+    <details><summary>I need local development or another hosting provider.</summary><p>See the <a href="https://github.com/bforbesc/ai-signal/blob/main/docs/DEVELOPMENT.md">development guide</a> for local environment files, migrations, architecture and hosting boundaries. The current server trusts Sites identity; another host needs its own trusted authentication implementation.</p></details>
+  </main>
+  <footer class="site-footer"><span>AI Signal · Personal newsletter reading</span><nav aria-label="Footer navigation"><a href="./">Overview</a><a href="privacy.html">Privacy</a><a href="https://github.com/bforbesc/ai-signal">Source</a></nav></footer>
+</body>
+</html>
