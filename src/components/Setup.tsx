@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { getClientId, saveClientId } from '../lib/auth';
+import { useAuth } from '../store/useAuth';
 export function Setup({ onClose, onSave }: { onClose: () => void; onSave: () => void }) {
   const [value, setValue] = useState(getClientId());
   const [error, setError] = useState('');
+  const serverManaged = useAuth(state => state.serverManaged);
+  const serverAvailable = useAuth(state => state.serverAvailable);
+  if (serverManaged) return <div className="modal-shade"><section role="dialog" aria-modal="true" aria-labelledby="setup-title" className="setup-panel"><button className="close-button" onClick={onClose} aria-label="Close setup">×</button><h2 id="setup-title">Your Gmail connection.</h2><p>Gmail stays connected when you reopen AI Signal. Access renews automatically; Google can still ask you to reconnect if permission changes.</p><p>Only newsletters in <strong>_AI_SIGNAL</strong> are loaded. Reading preferences are saved on this device.</p></section></div>;
   return <div className="modal-shade"><section role="dialog" aria-modal="true" aria-labelledby="setup-title" className="setup-panel">
     <button className="close-button" onClick={onClose} aria-label="Close setup">×</button>
     <p className="eyebrow">ONE-TIME SETUP</p><h2 id="setup-title">Connect your reading feed.</h2>
     <p>Google needs a web client ID for this address. It is free for standard personal use.</p>
+    {serverAvailable && <p>Automatic sign-in is prepared but needs server credentials. Until setup is finished, the browser connection expires when the app closes.</p>}
     <ol>
       <li>Open <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">Google Cloud</a> and create a project named AI Signal.</li>
       <li>Enable <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noreferrer">Gmail API</a>.</li>

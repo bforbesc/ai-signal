@@ -1,3 +1,4 @@
+import { SERVER_SESSION } from './session.ts';
 export const LABEL_NAME = '_AI_SIGNAL';
 const API = 'https://gmail.googleapis.com/gmail/v1/users/me/';
 export interface GmailPart {
@@ -54,9 +55,10 @@ export function mergeMessages(previous: Newsletter[], next: Newsletter[]): Newsl
   return [...new Map([...previous, ...next].map(item => [item.id, item])).values()].sort((a, b) => b.date - a.date);
 }
 export async function gmailRequest<T>(path: string, token: string, signal?: AbortSignal, params: Record<string, string | string[]> = {}): Promise<T> {
-  const url = new URL(API + path);
+  const managed = token === SERVER_SESSION;
+  const url = new URL(managed ? `/api/gmail/${path}` : API + path, managed ? window.location.origin : undefined);
   Object.entries(params).forEach(([key, value]) => { for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(key, item); });
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal, cache: 'no-store' });
+  const response = await fetch(url, { headers: managed ? {} : { Authorization: `Bearer ${token}` }, credentials: managed ? 'same-origin' : 'omit', signal, cache: 'no-store' });
   if (!response.ok) {
     const messages: Record<number, string> = {
       401: 'Your Google session has expired. Reconnect to refresh your feed.',

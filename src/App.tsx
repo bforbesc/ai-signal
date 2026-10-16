@@ -47,7 +47,7 @@ export function Reader({ item, onClose, onNext, onPrevious, position }: { item: 
   </section>;
 }
 export default function App() {
-  const { token, email, signIn, signOut, loading: signingIn, error: authError } = useAuth();
+  const { token, email, signIn, signOut, restoreSession, serverManaged, loading: signingIn, error: authError } = useAuth();
   const feed = useFeed();
   const [demo, setDemo] = useState(true);
   const [demoFilter, setDemoFilter] = useState('');
@@ -58,12 +58,14 @@ export default function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLDivElement>(null);
+  useEffect(() => { void restoreSession(); }, [restoreSession]);
   useEffect(() => { shell.current?.toggleAttribute('inert', !!selected || setup); }, [selected, setup]);
   useEffect(() => {
+    if (serverManaged) { setReady(true); setGoogleError(''); return; }
     let active = true; setReady(false); setGoogleError('');
     void prepareGoogle().then(() => { if (active) setReady(!!getClientId()); }).catch(error => { if (active) setGoogleError(error.message); });
     return () => { active = false; };
-  }, [configVersion]);
+  }, [configVersion, serverManaged]);
   useEffect(() => { if (token) { setDemo(false); setSelected(null); } }, [token]);
   useEffect(() => {
     if (!sentinel.current || demo || !feed.hasMore || feed.loading || feed.error) return;
@@ -80,14 +82,14 @@ export default function App() {
   useEffect(() => { document.body.style.overflow = selected ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [selected]);
   return <>
     <div className="app-shell" ref={shell}>
-      <header className="app-header"><a href="#" className="brand" onClick={event => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}><SignalMark/><span>AI Signal<span className="brand-dot">.</span></span></a><div className="header-actions">{demo ? <span className="demo-badge">Demo</span> : <button className={`icon-button ${feed.loading ? 'spinning' : ''}`} onClick={() => void feed.refresh()} disabled={feed.loading} aria-label="Refresh newsletters"><RefreshIcon/></button>}<button className="icon-button settings-button" aria-label="Connection settings" onClick={() => setSetup(true)}>⚙</button>{email && <button className="text-button" onClick={() => { signOut(); setSelected(null); setDemo(true); }}>Sign out</button>}</div></header>
+      <header className="app-header"><a href="#" className="brand" onClick={event => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}><SignalMark/><span>AI Signal<span className="brand-dot">.</span></span></a><div className="header-actions">{demo ? <span className="demo-badge">Demo</span> : <button className={`icon-button ${feed.loading ? 'spinning' : ''}`} onClick={() => void feed.refresh()} disabled={feed.loading} aria-label="Refresh newsletters"><RefreshIcon/></button>}<button className="icon-button settings-button" aria-label="Connection settings" onClick={() => setSetup(true)}>⚙</button>{email && <button className="text-button" onClick={() => { void signOut().then(done => { if (done) { setSelected(null); setDemo(true); } }); }}>Sign out</button>}</div></header>
       <main className="main-column">
         <section className="feed-intro"><h1>Your daily signal.</h1></section>
-        {demo && <SignIn ready={ready} onSetup={() => setSetup(true)}/>}
+        {demo && <SignIn ready={ready || serverManaged} onSetup={() => setSetup(true)}/>}
         {googleError && demo && <p className="notice" role="status">{googleError} <button onClick={() => setConfigVersion(value => value + 1)}>Retry</button></p>}
         <div className="feed-bar"><select aria-label="Filter by newsletter" className="newsletter-filter" value={demo ? demoFilter : feed.sourceFilter?.id ?? ''} onChange={event => { setSelected(null); if (demo) setDemoFilter(event.target.value); else feed.setSourceFilter(sources.find(source => source.id === event.target.value) ?? null); }}><option value="">All newsletters</option>{sources.map(source => <option key={source.id} value={source.id}>{source.name}</option>)}</select><span className="label-pill">_AI_SIGNAL</span></div>
         {!demo && email && <div className="account-line">{email}<span>{feed.updated ? 'Updated ' + new Date(feed.updated).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : 'Connecting…'}</span></div>}
-        {(!demo && (feed.error || authError)) && <div className="notice" role="alert"><p>{feed.error || authError}</p>{feed.expired ? <button className="primary" disabled={signingIn || !ready} onClick={() => void signIn()}>{signingIn ? 'Connecting…' : 'Reconnect Google'}</button> : <button onClick={() => void feed.load(feed.items.length === 0)}>Try again</button>}</div>}
+        {(!demo && (feed.error || authError)) && <div className="notice" role="alert"><p>{feed.error || authError}</p>{feed.expired ? <button className="primary" disabled={signingIn || (!ready && !serverManaged)} onClick={() => void signIn()}>{signingIn ? 'Connecting…' : 'Reconnect Google'}</button> : <button onClick={() => void feed.load(feed.items.length === 0)}>Try again</button>}</div>}
         {!demo && feed.sourceError && <p className="source-notice" role="status">{feed.sourceError}</p>}
         <div className="edition-list">{items.map((item, i) => <article key={item.id} className="edition"><div className="edition-top"><div className={`publisher-row source-${i % 3}`}><span className="avatar">{item.sender.charAt(0)}</span><span>{item.sender}</span></div><span className="edition-date">{dateLabel(item.date)}</span></div><h2><button onClick={() => open(item)}>{item.subject}</button></h2><p className="edition-excerpt">{previewText(item)}</p><div className="edition-bottom"><span>{item.readMinutes} min read</span><button className="read-button" onClick={() => open(item)}>Read edition <span aria-hidden="true">↗</span></button></div></article>)}</div>
         {feed.loading && !demo && <div role="status" className="loading"><span className="loading-dot"/> Gathering your newsletters…</div>}
@@ -97,6 +99,6 @@ export default function App() {
       </main>
     </div>
     {current && <Reader item={current} onClose={close} position={`${index + 1} / ${items.length}`} onPrevious={index > 0 ? () => setSelected(items[index - 1].id) : undefined} onNext={index < items.length - 1 ? () => setSelected(items[index + 1].id) : undefined}/>}
-    {setup && <Setup onClose={() => setSetup(false)} onSave={() => { setSetup(false); setConfigVersion(value => value + 1); signOut(); setDemo(true); }}/>}
+    {setup && <Setup onClose={() => setSetup(false)} onSave={() => { setSetup(false); setConfigVersion(value => value + 1); void signOut().then(done => { if (done) setDemo(true); }); }}/>}
   </>;
 }

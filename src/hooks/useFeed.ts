@@ -14,7 +14,7 @@ export function useFeed() {
   const [hasMore, setHasMore] = useState(false);
   const [updated, setUpdated] = useState<number | null>(null);
   const controller = useRef<AbortController | null>(null);
-  const cursor = useRef<string>(); const label = useRef<string>(); const busy = useRef(false);
+  const cursor = useRef<string | undefined>(undefined); const label = useRef<string | undefined>(undefined); const busy = useRef(false);
   useEffect(() => { setSources([]); setSourceFilter(null); setSourceError(''); }, [token]);
   useEffect(() => {
     if (!token) return;

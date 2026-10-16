@@ -1,0 +1,18 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #302e29; background: #fcfbf8; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 44rem; margin: auto; padding: 3.5rem 1.4rem 5rem; }
+nav, footer { font-size: .875rem; color: #69675f; }
+nav a { text-decoration: none; font-weight: 650; }
+h1, h2 { font-family: Georgia, serif; font-weight: 400; line-height: 1.15; letter-spacing: -.025em; }
+h1 { font-size: clamp(2.3rem, 8vw, 3.7rem); margin: 3rem 0 1.5rem; }
+h2 { font-size: 1.5rem; margin: 2rem 0 .8rem; }
+p, li { font-size: 1.05rem; line-height: 1.75; }
+li { margin-bottom: .5rem; }
+ul { padding-left: 1.3rem; }
+a { color: #506347; text-underline-offset: .2em; overflow-wrap: anywhere; }
+.intro { font-family: Georgia, serif; font-size: 1.4rem; line-height: 1.6; }
+.button { display: inline-block; padding: .8rem 1.1rem; background: #506347; color: white; border-radius: .5rem; text-decoration: none; }
+footer { border-top: 1px solid #dedcd4; margin-top: 3rem; padding-top: 1.2rem; line-height: 1.8; }
+code { font-size: .95em; }
+@media (max-width: 480px) { main { padding-top: 2rem; } h1 { margin-top: 2.4rem; } }
