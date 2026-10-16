@@ -69,7 +69,8 @@ export function readerDocument(item: Newsletter, original: boolean, images: bool
       details.appendChild(content); parent.appendChild(details); return;
     }
     let name = node.tagName.toLowerCase();
-    if (!original && node.classList.contains('h1')) name = 'h2';
+    const linkedHeading = !original && name === 'a' && node.classList.contains('h1');
+    if (!original && node.classList.contains('h1') && !linkedHeading) name = 'h2';
     if (['table', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th', 'center', 'section', 'article'].includes(name) && !original) name = 'div';
     const canKeep = allowed.has(name.toUpperCase()) || (original && ['table', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th', 'center'].includes(name));
     if (!canKeep) { node.childNodes.forEach(child => copy(child, parent)); return; }
@@ -93,7 +94,10 @@ export function readerDocument(item: Newsletter, original: boolean, images: bool
     }
     node.childNodes.forEach(child => copy(child, el));
     if (!original && !compactText(el.textContent ?? '') && !el.querySelector('img,hr') && !['br', 'hr', 'img'].includes(name)) return;
-    parent.appendChild(el);
+    if (linkedHeading) {
+      const heading = document.createElement('h2');
+      heading.appendChild(el); parent.appendChild(heading);
+    } else parent.appendChild(el);
   }
   if (item.html) source.content.childNodes.forEach(node => copy(node, output));
   else {

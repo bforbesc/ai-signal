@@ -13,6 +13,7 @@ The public demo contains fictional editions. Private emails and personalised new
 - One newest-first feed, with automatic publication detection and newsletter filters.
 - Warm paper, serif body text and a compact title that scrolls with the article.
 - Reading view removes standalone signup/social menus, feedback controls and administrative footers. Long contents lists fold under **In this edition**.
+- Linked story headlines stay tappable after cleanup and open the publisher's destination separately.
 - **Aa** saves text size, default reading/email layout and image preferences on the device. Tap outside to close it.
 - Read-only Gmail access. No email sending/deleting, generated summaries or notifications.
 

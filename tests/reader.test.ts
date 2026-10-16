@@ -29,3 +29,23 @@ test('subject scrolls inside the document, is escaped, and repeated headlines ar
  const rendered=readerDocument({...item,subject:'News <one>',html:'<title>Brand metadata</title><h1>News &lt;one&gt;</h1><p><strong>One</strong> <em>two</em> three.</p>'},false,false,19);const body=parseHTML(rendered).document.body;
  assert.equal(body.querySelector('.reader-title')?.textContent,'News <one>');assert.equal(body.querySelectorAll('h1').length,1);assert.ok(!body.textContent.includes('Brand metadata'));assert.ok(body.textContent.includes('One two three.'));
 });
+test('linked newsletter headlines remain navigable when their heading styles are cleaned',()=>{
+ const html='<h2>Signals</h2><a class="h1" href="https://example.com/story?ref=newsletter&amp;edition=1" onclick="alert(1)">A useful <strong>research story</strong></a><p>Presented by a publisher.</p><a class="h1" href="https://example.com/next">Another story</a>';
+ const body=readingBody(html);
+ const links=Array.from(body.querySelectorAll('a[href]'));
+ assert.equal(links.length,2);
+ assert.equal(links[0].textContent,'A useful research story');
+ assert.equal(links[0].getAttribute('href'),'https://example.com/story?ref=newsletter&edition=1');
+ assert.equal(links[0].parentElement?.tagName,'H2');
+ assert.equal(links[0].getAttribute('target'),'_blank');
+ assert.equal(links[0].getAttribute('rel'),'noopener noreferrer');
+ assert.ok(!links[0].hasAttribute('onclick'));
+ assert.ok(body.textContent.includes('Presented by a publisher.'));
+ assert.equal(readingBody(html,true).querySelectorAll('a[href]').length,2);
+});
+test('a linked heading cannot bypass unsafe URL filtering',()=>{
+ const body=readingBody('<a class="h1" href="javascript:alert(1)">Unsafe story</a><a class="h1" href="data:text/html,hello">Another unsafe story</a>');
+ assert.equal(body.querySelectorAll('a[href]').length,0);
+ assert.ok(body.textContent.includes('Unsafe story'));
+ assert.ok(body.textContent.includes('Another unsafe story'));
+});
