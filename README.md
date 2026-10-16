@@ -1,14 +1,24 @@
-# AI Signal
+<img src="docs/icons/ai-signal-180.png" alt="AI Signal icon" width="56" height="56" align="right" />
+
+# AI Signal — Newsletter reader
 
 **Read your Gmail newsletters like a book.**
 
-AI Signal brings **multiple newsletters, on any topic**, from Gmail into one quiet reading feed. Apply the `_AI_SIGNAL` label to the newsletters you want, read them together, or filter by publication. It works in a browser and can live on your iPhone Home Screen.
+[![Build](https://github.com/bforbesc/ai-signal/actions/workflows/web.yml/badge.svg?branch=main)](https://github.com/bforbesc/ai-signal/actions/workflows/web.yml)
+[![MIT licence](https://img.shields.io/badge/License-MIT-365f47?style=flat)](LICENSE)
+[![Gmail read-only access](https://img.shields.io/badge/Gmail-read--only-365f47?style=flat&logo=gmail&logoColor=white)](PRIVACY.md)
+
+An open-source **Gmail newsletter reader** for **multiple publications, on any topic**. Apply the `_AI_SIGNAL` label to the newsletters you want, read them in one quiet feed, or filter by publication. It works in a browser and can live on your iPhone Home Screen.
 
 [Overview](https://bforbesc.github.io/ai-signal/) · [Set up your own](https://bforbesc.github.io/ai-signal/setup.html) · [Development](docs/DEVELOPMENT.md) · [Privacy](PRIVACY.md)
 
+## Demo
+
+**Your newsletter feed → your reading space.** Tap either screenshot to see it full size.
+
 <p>
-  <img src="docs/images/feed-preview.jpg" alt="AI Signal feed with fictional sample newsletters" width="250" />
-  <img src="docs/images/reader-preview.jpg" alt="AI Signal reading view with comfortable serif text" width="250" />
+  <a href="docs/images/feed-preview.jpg"><img src="docs/images/feed-preview.jpg" alt="Newsletter feed: editions from Gmail with publication filtering" width="300" /></a>
+  <a href="docs/images/reader-preview.jpg"><img src="docs/images/reader-preview.jpg" alt="Reading view: a sample edition with serif text and simple reading controls" width="300" /></a>
 </p>
 
 *Screenshots use original, fictional sample editions. No private email is shown.*
