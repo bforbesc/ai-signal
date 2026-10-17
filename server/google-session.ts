@@ -87,7 +87,7 @@ async function updateReadStatus(request: Request, env: SessionEnvironment, user:
 }
 async function gmailProxy(request: Request, env: SessionEnvironment, user: string, path: string): Promise<Response> {
   const query = new URL(request.url).searchParams;
-  if (path === 'profile') { const profile = await gmail(env, user, 'profile'); return json({ emailAddress: profile.emailAddress }); }
+  if (path === 'profile') { const profile = await gmail(env, user, 'profile'); return json({ emailAddress: profile.emailAddress, historyId: profile.historyId }); }
   const labels = await gmail(env, user, 'labels');
   const label = labels.labels?.find((item: { name: string }) => item.name === '_AI_SIGNAL');
   if (path === 'labels') return json({ labels: label ? [label] : [] });

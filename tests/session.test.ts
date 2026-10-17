@@ -29,7 +29,7 @@ function google(expires = 3600, grantedScope = scope) {
       const refresh = String(init?.body).includes('grant_type=refresh_token'); if (refresh) refreshed++;
       return Response.json({ access_token: refresh ? 'renewed-test-access' : 'test-access', refresh_token: refresh ? undefined : 'test-refresh', expires_in: refresh ? 3600 : expires, scope: grantedScope });
     }
-    if (url.includes('/profile')) return Response.json({ emailAddress: 'reader@example.com' });
+    if (url.includes('/profile')) return Response.json({ emailAddress: 'reader@example.com', historyId: '12345678901234567890' });
     if (url.includes('/labels')) return Response.json({ labels: [{ id: 'allowed', name: '_AI_SIGNAL' }, { id: 'INBOX', name: 'INBOX' }] });
     if (url.includes('/messages/private')) return Response.json({ id: 'private', labelIds: ['INBOX'] });
     if (url.includes('/messages/edition')) return Response.json({ id: 'edition', labelIds: ['allowed'] });
@@ -83,6 +83,13 @@ test('another visitor cannot use the saved Gmail grant', async () => {
   const ctx = context(); google(); await connect(ctx);
   assert.deepEqual(await (await ctx.call('/api/auth/session', {}, 'other-user')).json(), { configured: true, connected: false });
   assert.equal((await ctx.call('/api/gmail/messages', {}, 'other-user')).status, 401);
+});
+test('the lightweight change check returns a string marker only to the connected visitor', async () => {
+  const ctx = context(); google(); await connect(ctx);
+  const response = await ctx.call('/api/gmail/profile');
+  assert.deepEqual(await response.json(), { emailAddress: 'reader@example.com', historyId: '12345678901234567890' });
+  assert.equal(response.headers.get('cache-control'), 'private, no-store');
+  assert.equal((await ctx.call('/api/gmail/profile', {}, 'other-user')).status, 401);
 });
 test('server enforces the label even if a client asks for inbox mail or attachments', async () => {
   const ctx = context(); const mock = google(); await connect(ctx);

@@ -10,6 +10,17 @@ test('reading view removes script, handlers, layout tables and unsafe links',()=
 test('remote images are blocked by default and tracking pixels stay excluded when enabled',()=>{assert.ok(!readerDocument(item,false,false,19).includes('<img'));assert.ok(!readerDocument(item,false,true,19).includes('<img'));});
 test('email layout retains tables but remains scriptless',()=>{const html=readerDocument(item,true,false,19);assert.ok(html.includes('<table'));assert.ok(html.includes("script-src 'none'"));assert.ok(!html.includes('<script'));assert.ok(!html.includes('onclick'));});
 test('plain text is escaped and reader font is bounded',()=>{const html=readerDocument({...item,html:'',text:'<script>hello</script>'},false,false,100);assert.ok(html.includes('&lt;script&gt;'));assert.ok(html.includes('font-size:24px'));});
+test('gesture support permits only the generated nonce script; newsletter scripts remain removed', () => {
+ const channel='1234567890abcdef1234567890abcdef';
+ const html=readerDocument({...item,html:'<script>alert(1)</script><p onclick="alert(2)">A story.</p>'},false,false,19,channel);
+ const doc=parseHTML(html).document;
+ assert.equal(doc.querySelectorAll('script').length,1);
+ assert.equal(doc.querySelector('script')?.getAttribute('nonce'),channel);
+ assert.ok(html.includes(`script-src 'nonce-${channel}'`));
+ assert.ok(html.includes("script-src-attr 'none'"));
+ assert.ok(!html.includes('alert(')); assert.ok(!html.includes('onclick'));
+ assert.ok(!readerDocument(item,false,false,19).includes('<script'));
+});
 
 function readingBody(html:string, original=false){const rendered=readerDocument({...item,subject:'An edition',html},original,false,19);return parseHTML(rendered).document.body;}
 test('newsletter table menus and separators disappear while editorial links remain',()=>{

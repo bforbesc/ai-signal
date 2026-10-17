@@ -53,7 +53,7 @@ Do not replay an already applied migration. Local data lives under ignored `.wra
 
 Keep the encryption key stable: changing it prevents existing connections from being decrypted. Redeploy after changing hosted runtime values.
 
-The optional browser fallback uses `VITE_GOOGLE_CLIENT_ID` at build time or a client ID entered in Connection settings. It keeps access tokens in memory and requires reconnecting after closing or expiry. It does not provide persistent Gmail login. Only a **public client ID** belongs in a `VITE_` variable.
+The optional browser fallback uses `VITE_GOOGLE_CLIENT_ID` at build time or a client ID entered through Aa → Connection setup. It keeps access tokens in memory and requires reconnecting after closing or expiry. It does not provide persistent Gmail login. Only a **public client ID** belongs in a `VITE_` variable.
 
 The original deployment's public OAuth ID and origin remain compatibility defaults in `src/lib/auth.ts` and `server/google-session.ts`. They are not secrets, but **must not be used for a new installation**. Supply your own runtime settings, configure any browser fallback with your own client ID, and replace deployment-specific defaults when preparing your copy.
 
@@ -77,7 +77,8 @@ The `docs/` site is separate from the private reader. GitHub Pages hosts documen
 
 | Path | Responsibility |
 | --- | --- |
-| `src/App.tsx`, `src/components/` | Feed, reader and settings |
+| `src/App.tsx`, `src/components/`, `src/store/useReadingPreferences.ts` | Feed, reader and shared device-persisted Aa defaults |
+| `src/lib/reader-navigation.ts` | Touch gesture bridge, source/channel validation and fixed navigation boundaries |
 | `src/lib/gmail.ts`, `src/hooks/useFeed.ts` | Gmail parsing, pagination and publication filters |
 | `src/lib/reader.ts` | Email cleanup and isolated reading document |
 | `src/lib/feed-cache.ts`, `src/hooks/useFeed.ts` | Account-scoped IndexedDB cache of the newest 30 editions, background refresh and lazy pagination |
@@ -89,7 +90,7 @@ The `docs/` site is separate from the private reader. GitHub Pages hosts documen
 
 ## Validation
 
-Run `npm run check:secrets`, `npm run typecheck`, `npm test` and `npm run build`. Tests cover Gmail read flags, label-restricted status writes, CSRF/visitor checks, cache size/cursor boundaries, cached body reuse, corrupt or blocked browser storage, MIME parsing, exact label matching, publication filters, reader cleanup and link preservation, isolated rendering, OAuth state checks, encrypted credentials, session renewal, user isolation and sign-out.
+Run `npm run check:secrets`, `npm run typecheck`, `npm test` and `npm run build`. Tests cover Gmail read flags, label-restricted status writes, CSRF/visitor checks, cache size/cursor boundaries, cached body reuse, corrupt or blocked browser storage, MIME parsing, exact label matching, publication filters, reader cleanup and link preservation, isolated rendering, nonce-only app gestures, swipe thresholds and navigation boundaries, OAuth state checks, encrypted credentials, session renewal, user isolation and sign-out.
 
 For a deployment, also test your own Google consent flow, load an edition, open an article link, and close/reopen the reader on your phone. Unit tests do not prove a real account's OAuth configuration or a physical iPhone's behaviour.
 
@@ -99,4 +100,4 @@ Use your GitHub no-reply address for public commits if you want to keep your per
 
 ## Current limits
 
-The reader supports multiple newsletter publications on any topic from one connected Gmail account. Publication grouping uses `List-ID` or the sender address; there is no publisher allowlist. The label name is exactly `_AI_SIGNAL`. There is no inbox fallback or label picker. Inline `cid:` images and non-UTF-8 encodings are not specially handled, and cleanup can vary with email formatting. Images are optional and off by default. Read/unread status comes from Gmail, and opening an edition removes its `UNREAD` flag after the server checks label membership. The newest 30 editions are cached per Gmail account in IndexedDB; older pages remain in memory only. Refresh reuses cached bodies and requests fresh flags, with full fetches for new IDs. The saved older-page cursor always belongs to the first 30-message page. Publications are discovered from loaded/cached editions rather than scanning the entire label at startup. Background checks run on reopening/returning and every ten minutes while visible. There is no polling while closed or guaranteed fully offline startup. There is no generated summary, sending/deletion UI or native App Store package.
+The reader supports multiple newsletter publications on any topic from one connected Gmail account. Publication grouping uses `List-ID` or the sender address; there is no publisher allowlist. The label name is exactly `_AI_SIGNAL`. There is no inbox fallback or label picker. Inline `cid:` images and non-UTF-8 encodings are not specially handled, and cleanup can vary with email formatting. Images are optional and off by default. Read/unread status comes from Gmail, and opening an edition removes its `UNREAD` flag after the server checks label membership. The newest 30 editions are cached per Gmail account in IndexedDB; older pages remain in memory only. Automatic refresh first reads Gmail’s profile history ID. If it matches the cached mailbox marker, it skips label/message requests. When it changes, refresh reuses cached bodies and requests fresh flags, with full fetches for new IDs. Manual refresh bypasses the equality check. The saved older-page cursor always belongs to the first 30-message page. Publications are discovered from loaded/cached editions rather than scanning the entire label at startup. Background checks run on opening/returning and every ten minutes while visible. Duplicate focus/visibility events within two seconds are coalesced. Aa defaults share the existing localStorage keys across the feed and reader. Horizontal gestures use an app-owned script in an opaque-origin iframe; nonce-only CSP blocks newsletter scripts and inline event handlers. Parent messages require the current iframe source and a random channel. Swipes stop at the first and last loaded edition. There is no polling while hidden or closed or guaranteed fully offline startup. There is no generated summary, sending/deletion UI or native App Store package.

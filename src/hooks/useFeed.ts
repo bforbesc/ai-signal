@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../store/useAuth';
-import { fetchPage, findLabel, GmailError, mergeMessages, setMessageRead, type Newsletter, type NewsletterSource } from '../lib/gmail';
+import { fetchPage, findLabel, gmailRequest, GmailError, mergeMessages, setMessageRead, type Newsletter, type NewsletterSource } from '../lib/gmail';
 import { feedSnapshot, readFeedCache, saveFeedCache, type FeedSnapshot } from '../lib/feed-cache';
 
 export function useFeed() {
@@ -29,11 +29,14 @@ export function useFeed() {
   const writes = useRef(new Set<string>());
   const statusSequence = useRef(0);
   const confirmed = useRef(new Map<string, { sequence: number; read: boolean }>());
+  const history = useRef<string | undefined>(undefined);
+  const lastCheck = useRef(0);
 
   useEffect(() => { setSourceFilter(null); }, [email]);
 
-  const load = useCallback(async (refresh = false) => {
+  const load = useCallback(async (refresh = false, force = false) => {
     if (!token || !email || busy.current) return;
+    if (refresh && !force && Date.now() - lastCheck.current < 2000) return;
     if (token.expiresAt < Date.now() + 5000) { setExpired(true); setError('Reconnect Google to load fresh newsletters.'); return; }
     const visit = run.current;
     const sequence = statusSequence.current;
@@ -41,6 +44,22 @@ export function useFeed() {
     setLoading(!refresh || loaded.current.length === 0); setRefreshing(refresh);
     const abort = new AbortController(); controller.current = abort;
     try {
+      let historyId: string | undefined;
+      if (refresh) {
+        const profile = await gmailRequest<{ historyId?: string }>('profile', token.value, abort.signal);
+        if (abort.signal.aborted || visit !== run.current || useAuth.getState().token !== token) return;
+        historyId = profile.historyId;
+        lastCheck.current = Date.now();
+        if (!force && loaded.current.length && historyId && historyId === history.current) {
+          const now = Date.now(); setUpdated(now);
+          if (cache.current && !sourceFilter) {
+            cache.current = { ...cache.current, updatedAt: now };
+            const saved = await saveFeedCache(email, cache.current);
+            if (visit === run.current) setCacheWarning(!saved);
+          }
+          return;
+        }
+      }
       const id = !label.current || refresh ? await findLabel(token.value, abort.signal) : label.current;
       const page = await fetchPage(token.value, id, refresh ? undefined : cursor.current, abort.signal, sourceFilter, cache.current?.items);
       if (abort.signal.aborted || visit !== run.current || useAuth.getState().token !== token) return;
@@ -57,7 +76,8 @@ export function useFeed() {
       for (const item of fresh) catalog.set(item.source.id, item.source);
       sourceList.current = [...catalog.values()].sort((a, b) => a.name.localeCompare(b.name));
       setSources(sourceList.current);
-      if (!sourceFilter && refresh) cache.current = feedSnapshot(fresh, sourceList.current, page.nextPageToken, now);
+      if (refresh) history.current = historyId;
+      if (!sourceFilter && refresh) cache.current = { ...feedSnapshot(fresh, sourceList.current, page.nextPageToken, now), historyId };
       else if (cache.current) {
         const replacements = new Map(fresh.map(item => [item.id, item]));
         cache.current = { ...cache.current, sources: sourceList.current, items: cache.current.items.map(item => replacements.get(item.id) ?? item) };
@@ -78,12 +98,14 @@ export function useFeed() {
   useEffect(() => {
     const visit = ++run.current;
     controller.current?.abort(); busy.current = false; cursor.current = undefined; label.current = undefined;
+    history.current = undefined; lastCheck.current = 0;
     loaded.current = []; writes.current = new Set(); confirmed.current.clear();
     setItems([]); setError(''); setStatusError(''); setUpdatingIds([]); setHasMore(false); setUpdated(null); setLoading(!!token); setRefreshing(false); setExpired(false); setCacheWarning(false);
     if (token && email) void (async () => {
       const saved = await readFeedCache(email);
       if (visit !== run.current || useAuth.getState().token !== token) return;
       cache.current = saved;
+      history.current = sourceFilter ? undefined : saved?.historyId;
       sourceList.current = saved?.sources ?? [];
       setSources(sourceList.current);
       if (saved) {
@@ -101,9 +123,9 @@ export function useFeed() {
   useEffect(() => {
     if (!token) return;
     const check = () => { if (document.visibilityState === 'visible') void load(true); };
-    window.addEventListener('focus', check); window.addEventListener('online', check); document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check); window.addEventListener('pageshow', check); window.addEventListener('online', check); document.addEventListener('visibilitychange', check);
     const interval = window.setInterval(check, 10 * 60000);
-    return () => { window.removeEventListener('focus', check); window.removeEventListener('online', check); document.removeEventListener('visibilitychange', check); window.clearInterval(interval); };
+    return () => { window.removeEventListener('focus', check); window.removeEventListener('pageshow', check); window.removeEventListener('online', check); document.removeEventListener('visibilitychange', check); window.clearInterval(interval); };
   }, [token, load]);
 
   async function setRead(id: string, read: boolean) {
@@ -131,5 +153,5 @@ export function useFeed() {
       if (visit === run.current) { writes.current.delete(id); setUpdatingIds([...writes.current]); }
     }
   }
-  return { items, sources, sourceFilter, setSourceFilter, sourceError: '', loading, refreshing, error, statusError, updatingIds, cacheWarning, expired, hasMore, updated, load, setRead, isRead: (item: Newsletter) => confirmed.current.get(item.id)?.read ?? item.isRead, refresh: () => load(true) };
+  return { items, sources, sourceFilter, setSourceFilter, sourceError: '', loading, refreshing, error, statusError, updatingIds, cacheWarning, expired, hasMore, updated, load, setRead, isRead: (item: Newsletter) => confirmed.current.get(item.id)?.read ?? item.isRead, refresh: () => load(true, true) };
 }

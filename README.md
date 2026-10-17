@@ -29,7 +29,8 @@ An open-source **Gmail newsletter reader** for **multiple publications, on any t
 - Detects publications automatically and lets you filter by newsletter.
 - Shows unread titles in bold and marks an edition read in Gmail when you open it.
 - Offers a clean reading view with soft section dividers, plus the original email layout.
-- Remembers text size, default view and image preferences on your device.
+- Offers **Aa** on the feed and in the reader; text size, default view and image preferences stay saved on your device.
+- Moves between editions with a left/right swipe or the navigation arrows, stopping at each end.
 - Keeps article links working and removes common signup menus and email footers.
 - Keeps the newest 30 editions cached on your device, refreshes in the background, and loads older editions as you scroll.
 - Restores your Gmail connection when you return to a configured private deployment.
@@ -87,7 +88,7 @@ Open [the local preview](http://127.0.0.1:5173/signin-with-chatgpt?return_to=/) 
 
 Gmail status sync requires Google's `gmail.modify` permission, which is broader than read-only access. It can permit reading, composing, sending and moving email to Trash. AI Signal's server exposes only reads from `_AI_SIGNAL` and changes to the `UNREAD` flag on messages in that label; it has no sending or deletion routes. A configured server stores an encrypted connection so it can renew access.
 
-The latest 30 editions, including their text, are stored in this browser’s IndexedDB cache, separately for each Gmail account. Older editions are fetched on demand. New editions are checked on reopening/returning and every ten minutes while the app is visible; the closed app does not poll Gmail. Remote images are off by default. **Sign out** deletes your saved connection and clears that account’s device cache. You can also revoke access in your Google Account. Read the [privacy notice](PRIVACY.md) for details.
+The latest 30 editions, including their text, are stored in this browser’s IndexedDB cache, separately for each Gmail account. Older editions are fetched on demand. Opening or returning to the app runs a small Gmail change check, then checks every ten minutes while visible. Repeated focus events are grouped. If the mailbox is unchanged, the app keeps the cached articles without fetching them again. Manual refresh always checks edition data; the hidden or closed app does not poll Gmail. Remote images are off by default. **Sign out** deletes your saved connection and clears that account’s device cache. You can also revoke access in your Google Account. Read the [privacy notice](PRIVACY.md) for details.
 
 The code currently relies on Sites authentication. Deploying it on a different host requires implementing and reviewing a trusted identity boundary first; uploading it to a static host will not provide persistent Gmail login.
 

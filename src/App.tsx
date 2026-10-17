@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SignIn } from './components/SignIn';
 import { Setup } from './components/Setup';
+import { ReadingSettings } from './components/ReadingSettings';
+import { useReadingPreferences } from './store/useReadingPreferences';
+import { navigateSwipe, readSwipeMessage } from './lib/reader-navigation';
 import { useAuth } from './store/useAuth';
 import { getClientId, prepareGoogle } from './lib/auth';
 import { DEMO } from './lib/demo';
@@ -21,29 +24,26 @@ function dateLabel(date: number) {
   return day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 export function Reader({ item, onClose, onNext, onPrevious, position, statusError, isRead = false, onToggleRead, savingRead = false }: { item: Newsletter; onClose: () => void; onNext?: () => void; onPrevious?: () => void; position: string; statusError?: string; isRead?: boolean; onToggleRead?: () => void; savingRead?: boolean }) {
-  const [font, setFont] = useState(() => Math.min(24, Math.max(16, Number(localStorage.getItem('ai-signal-font')) || 19)));
-  const [original, setOriginal] = useState(() => localStorage.getItem('ai-signal-layout') === 'email');
-  const [images, setImages] = useState(() => localStorage.getItem('ai-signal-images') === 'true');
-  const [typeMenu, setTypeMenu] = useState(false);
-  const doc = useMemo(() => readerDocument(item, original, images, font), [item, original, images, font]);
+  const { font, original, images } = useReadingPreferences();
+  const [gestureChannel] = useState(() => Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join(''));
+  const doc = useMemo(() => readerDocument(item, original, images, font, gestureChannel), [item, original, images, font, gestureChannel]);
   const readerRef = useRef<HTMLElement>(null);
-  const typePanelRef = useRef<HTMLDivElement>(null);
-  const typeToggleRef = useRef<HTMLButtonElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const navigation = useRef({ onNext, onPrevious });
+  navigation.current = { onNext, onPrevious };
   useEffect(() => { readerRef.current?.focus({ preventScroll: true }); }, [item.id]);
   useEffect(() => {
-    if (!typeMenu) return;
-    const dismiss = (event: PointerEvent) => { if (event.target instanceof Node && !typePanelRef.current?.contains(event.target) && !typeToggleRef.current?.contains(event.target)) setTypeMenu(false); };
-    document.addEventListener('pointerdown', dismiss, true);
-    return () => document.removeEventListener('pointerdown', dismiss, true);
-  }, [typeMenu]);
-  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { if (typeMenu) setTypeMenu(false); else onClose(); } }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, [onClose, typeMenu]);
-  function resize(value: number) { setFont(value); localStorage.setItem('ai-signal-font', String(value)); }
-  function chooseLayout(value: boolean) { setOriginal(value); localStorage.setItem('ai-signal-layout', value ? 'email' : 'reading'); }
-  function toggleImages() { const value = !images; setImages(value); localStorage.setItem('ai-signal-images', String(value)); }
+    const swipe = (event: MessageEvent) => {
+      const direction = readSwipeMessage(event, iframeRef.current?.contentWindow ?? null, gestureChannel);
+      navigateSwipe(direction, navigation.current);
+    };
+    window.addEventListener('message', swipe);
+    return () => window.removeEventListener('message', swipe);
+  }, [gestureChannel]);
+  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.defaultPrevented) onClose(); }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, [onClose]);
   return <section ref={readerRef} tabIndex={-1} role="dialog" aria-modal="true" className="reader" aria-label="Newsletter reader">
-    <header className="reader-toolbar"><button className="back-button" onClick={onClose} aria-label="Back to feed">←</button><span className="book-publisher">{item.sender}</span><button ref={typeToggleRef} className="type-toggle" aria-label="Reading settings" aria-expanded={typeMenu} onClick={() => setTypeMenu(!typeMenu)}>Aa</button></header>
-    {typeMenu && <><div className="type-dismiss" aria-hidden="true" onPointerDown={() => setTypeMenu(false)}/><div ref={typePanelRef} className="type-panel" aria-label="Reading settings"><div className="type-controls"><span>Text size</span><button onClick={() => resize(Math.max(16, font - 1))} disabled={font <= 16 || original} aria-label="Smaller text">A−</button><span>{font}</span><button onClick={() => resize(Math.min(24, font + 1))} disabled={font >= 24 || original} aria-label="Larger text">A+</button></div><div className="reader-options" role="group" aria-label="Default view"><span>Default view</span><div><button aria-pressed={!original} className={!original ? 'active' : ''} onClick={() => chooseLayout(false)}>Reading view</button><button aria-pressed={original} className={original ? 'active' : ''} onClick={() => chooseLayout(true)}>Email layout</button></div></div><button className="image-preference" aria-pressed={images} onClick={toggleImages}><span>Images</span><span>{images ? 'On' : 'Off'}</span></button><p className="preferences-hint">Saved for all newsletters on this device.</p>{onToggleRead && <button className="reading-state-action" disabled={savingRead} onClick={onToggleRead}>{savingRead ? 'Saving to Gmail…' : isRead ? 'Mark as unread' : 'Mark as read'}</button>}</div></>}
-    <iframe key={item.id} title={`Full newsletter: ${item.subject}`} sandbox="allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" srcDoc={doc}/>
+    <header className="reader-toolbar"><button className="back-button" onClick={onClose} aria-label="Back to feed">←</button><span className="book-publisher">{item.sender}</span><ReadingSettings isRead={isRead} savingRead={savingRead} onToggleRead={onToggleRead}/></header>
+    <iframe ref={iframeRef} key={item.id} title={`Full newsletter: ${item.subject}`} sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" srcDoc={doc}/>
     {statusError && <p className="reader-status-message" role="alert">{statusError}</p>}
     <footer className="reader-footer"><button disabled={!onPrevious} onClick={onPrevious} aria-label="Previous newsletter">↑</button><span className="book-position">{position}</span><button disabled={!onNext} onClick={onNext} aria-label="Next newsletter">↓</button></footer>
   </section>;
@@ -90,7 +90,7 @@ export default function App() {
   useEffect(() => { document.body.style.overflow = selected ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [selected]);
   return <>
     <div className="app-shell" ref={shell}>
-      <header className="app-header"><a href="#" className="brand" onClick={event => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}><SignalMark/><span>AI Signal<span className="brand-dot">.</span></span></a><div className="header-actions">{demo ? <span className="demo-badge">Demo</span> : <button className={`icon-button ${feed.loading || feed.refreshing ? 'spinning' : ''}`} onClick={() => void feed.refresh()} disabled={feed.loading || feed.refreshing} aria-label="Refresh newsletters"><RefreshIcon/></button>}<button className="icon-button settings-button" aria-label="Connection settings" onClick={() => setSetup(true)}>⚙</button>{email && <button className="text-button" onClick={() => { void signOut().then(done => { if (done) { setSelected(null); setDemo(true); } }); }}>Sign out</button>}</div></header>
+      <header className="app-header"><a href="#" className="brand" onClick={event => { event.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}><SignalMark/><span>AI Signal<span className="brand-dot">.</span></span></a><div className="header-actions">{demo ? <span className="demo-badge">Demo</span> : <button className={`icon-button ${feed.loading || feed.refreshing ? 'spinning' : ''}`} onClick={() => void feed.refresh()} disabled={feed.loading || feed.refreshing} aria-label="Refresh newsletters"><RefreshIcon/></button>}<ReadingSettings className="feed-reading-settings" onSetup={!serverManaged ? () => setSetup(true) : undefined}/>{email && <button className="text-button" onClick={() => { void signOut().then(done => { if (done) { setSelected(null); setDemo(true); } }); }}>Sign out</button>}</div></header>
       <main className="main-column">
         <section className="feed-intro"><h1>Your daily signal.</h1></section>
         {demo && <SignIn ready={ready || serverManaged} onSetup={() => setSetup(true)}/>}
@@ -100,7 +100,7 @@ export default function App() {
         {!demo && feed.cacheWarning && <p className="source-notice" role="status">Device storage is unavailable. Editions will load from Gmail each visit.</p>}
         {!demo && feed.statusError && <p className="source-notice" role="alert">{feed.statusError}</p>}
         {!demo && email && <div className="account-line">{email}<span>{feed.updated ? 'Updated ' + new Date(feed.updated).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : 'Connecting…'}</span></div>}
-        {(!demo && (feed.error || authError)) && <div className="notice" role="alert"><p>{feed.error || authError}</p>{feed.expired ? <button className="primary" disabled={signingIn || (!ready && !serverManaged)} onClick={() => void signIn()}>{signingIn ? 'Connecting…' : 'Reconnect Google'}</button> : <button onClick={() => void feed.load(feed.items.length === 0)}>Try again</button>}</div>}
+        {(!demo && (feed.error || authError)) && <div className="notice" role="alert"><p>{feed.error || authError}</p>{feed.expired ? <button className="primary" disabled={signingIn || (!ready && !serverManaged)} onClick={() => void signIn()}>{signingIn ? 'Connecting…' : 'Reconnect Google'}</button> : <button onClick={() => void feed.refresh()}>Try again</button>}</div>}
         {!demo && feed.sourceError && <p className="source-notice" role="status">{feed.sourceError}</p>}
         <div className="edition-list">{items.map((item, i) => <article key={item.id} className={`edition ${isRead(item) ? 'edition-read' : 'edition-unread'}`}><div className="edition-top"><div className={`publisher-row source-${i % 3}`}><span className="avatar">{item.sender.charAt(0)}</span><span>{item.sender}</span></div><span className="edition-date">{dateLabel(item.date)}</span></div><a className="edition-open" href={`#edition-${encodeURIComponent(item.id)}`} aria-label={`${item.subject}${isRead(item) ? '' : ' — unread'}`} onClick={event => { event.preventDefault(); open(item); }}><h2>{item.subject}</h2><p className="edition-excerpt">{previewText(item)}</p></a><div className="edition-bottom"><span>{item.readMinutes} min read</span></div></article>)}</div>
         {feed.loading && !demo && <div role="status" className="loading"><span className="loading-dot"/> Gathering your newsletters…</div>}

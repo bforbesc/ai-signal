@@ -14,7 +14,7 @@ The hosted reader is private to its owner and uses Sites sign-in. The server ass
 
 ## Email content and device storage
 
-Email content passes through the hosting server; it is not archived in the server database. The newest 30 editions, including subjects, sender details, text, HTML and read flags, are cached in this browser’s IndexedDB, separately for each Gmail account. Older editions are held in memory when loaded, and newer editions replace older cached editions. A small publication catalog is also saved for the newsletter filter. Local storage saves reading preferences, public connection settings and fictional-demo progress. Real read status is fetched from Gmail and updated there. The service worker does not cache authenticated pages or tokens. Hosting providers process requests and may retain operational logs under their own policies.
+Email content passes through the hosting server; it is not archived in the server database. The newest 30 editions, including subjects, sender details, text, HTML and read flags, are cached in this browser’s IndexedDB, separately for each Gmail account. Older editions are held in memory when loaded, and newer editions replace older cached editions. A small publication catalog and Gmail mailbox change marker are also saved, so the app can filter newsletters and avoid refetching unchanged editions. Local storage saves reading preferences, public connection settings and fictional-demo progress. Real read status is fetched from Gmail and updated there. The service worker does not cache authenticated pages or tokens. Hosting providers process requests and may retain operational logs under their own policies.
 
 ## How data is used
 
@@ -22,7 +22,7 @@ AI Signal does not sell Google user data, use it for advertising, or send it to 
 
 ## Images and links
 
-Newsletter scripts, forms and embedded frames are removed from displayed email HTML. Remote images are off by default. Enabling images contacts their external hosts, which can receive your IP address and image-request information. Opening an article link visits that publisher's website under its own policies.
+Newsletter scripts, forms and embedded frames are removed from displayed email HTML. The isolated reader runs only an app-owned swipe-navigation script, allowed by a per-reader Content Security Policy nonce; it does not run newsletter JavaScript. Remote images are off by default. Enabling images contacts their external hosts, which can receive your IP address and image-request information. Opening an article link visits that publisher's website under its own policies.
 
 ## Disconnecting and deleting data
 

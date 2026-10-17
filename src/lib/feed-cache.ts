@@ -1,7 +1,7 @@
 import { mergeMessages, type Newsletter, type NewsletterSource } from './gmail.ts';
 
 export const CACHE_LIMIT = 30;
-export interface FeedSnapshot { items: Newsletter[]; sources: NewsletterSource[]; nextPageToken?: string; updatedAt: number }
+export interface FeedSnapshot { items: Newsletter[]; sources: NewsletterSource[]; nextPageToken?: string; updatedAt: number; historyId?: string }
 const databaseName = 'ai-signal-feed-v1';
 const accountKey = (account: string) => account.trim().toLowerCase();
 
@@ -39,7 +39,7 @@ export async function readFeedCache(account: string): Promise<FeedSnapshot | nul
     if (!value || !Array.isArray(value.items) || !Array.isArray(value.sources) || !Number.isFinite(value.updatedAt)) return null;
     if (!value.items.every(item => item && typeof item.id === 'string' && typeof item.html === 'string' && typeof item.text === 'string' && typeof item.subject === 'string' && typeof item.sender === 'string' && typeof item.snippet === 'string' && typeof item.isRead === 'boolean' && Number.isFinite(item.date) && Number.isFinite(item.readMinutes) && item.source && typeof item.source.id === 'string')) return null;
     if (!value.sources.every(source => source && typeof source.id === 'string' && typeof source.name === 'string')) return null;
-    return feedSnapshot(value.items, value.sources, value.nextPageToken, value.updatedAt);
+    return { ...feedSnapshot(value.items, value.sources, value.nextPageToken, value.updatedAt), historyId: typeof value.historyId === 'string' ? value.historyId : undefined };
   } catch { return null; }
 }
 
