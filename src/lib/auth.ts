@@ -1,5 +1,5 @@
 // Google Identity Services access tokens stay in memory. Only the public client ID is saved.
-const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+const SCOPE = 'https://www.googleapis.com/auth/gmail.modify';
 // Public OAuth identifier. Google restricts it to the registered web origins.
 const DEFAULT_CLIENT_ID = '198520129642-pr18hqs7sa8cj3e2u3jqer8koj2cv45l.apps.googleusercontent.com';
 interface TokenResponse { access_token: string; expires_in: number; scope: string; error?: string }
@@ -11,7 +11,7 @@ declare global {
     } } };
   }
 }
-export interface AccessToken { value: string; expiresAt: number }
+export interface AccessToken { value: string; expiresAt: number; canMarkRead?: boolean }
 export function getClientId(): string {
   return localStorage.getItem('ai-signal-client-id') || (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || DEFAULT_CLIENT_ID;
 }
@@ -32,8 +32,8 @@ export async function prepareGoogle(): Promise<void> {
     callback: response => {
       const request = pending; pending = null;
       if (response.error) request?.reject(new Error(response.error));
-      else if (!response.scope?.split(' ').includes(SCOPE)) request?.reject(new Error('Allow read-only Gmail access to load your newsletters.'));
-      else request?.resolve({ value: response.access_token, expiresAt: Date.now() + response.expires_in * 1000 });
+      else if (!response.scope?.split(' ').includes(SCOPE)) request?.reject(new Error('Allow Gmail access to read newsletters and sync read/unread status.'));
+      else request?.resolve({ value: response.access_token, expiresAt: Date.now() + response.expires_in * 1000, canMarkRead: true });
     },
     error_callback: error => {
       const request = pending; pending = null;
@@ -53,6 +53,6 @@ export function requestAccessToken(): Promise<AccessToken> {
 }
 export async function fetchGmailProfile(token: string): Promise<{ emailAddress: string }> {
   const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
-  if (!response.ok) throw new Error('Could not connect to Gmail. Check the Gmail API and your read-only permission.');
+  if (!response.ok) throw new Error('Could not connect to Gmail. Check the Gmail API and the granted permission.');
   return response.json();
 }

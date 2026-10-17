@@ -8,7 +8,7 @@ Start with the [personal setup guide](https://bforbesc.github.io/ai-signal/setup
 - Codex with the Sites plugin for the currently supported hosted deployment.
 - Your own Google OAuth web client for real Gmail access. Sample editions need no Google credentials.
 
-The app uses React, Vinext and a Cloudflare Worker with D1. Sites provides hosted app identity; Google authorization provides read-only Gmail access. These are separate connections.
+The app uses React, Vinext and a Cloudflare Worker with D1. Sites provides hosted app identity; Google authorization provides Gmail reading and read-status access through `gmail.modify`. These are separate connections.
 
 ## Local preview
 
@@ -80,6 +80,8 @@ The `docs/` site is separate from the private reader. GitHub Pages hosts documen
 | `src/App.tsx`, `src/components/` | Feed, reader and settings |
 | `src/lib/gmail.ts`, `src/hooks/useFeed.ts` | Gmail parsing, pagination and publication filters |
 | `src/lib/reader.ts` | Email cleanup and isolated reading document |
+| `src/lib/feed-cache.ts`, `src/hooks/useFeed.ts` | Account-scoped IndexedDB cache of the newest 30 editions, background refresh and lazy pagination |
+| `src/lib/reading-state.ts`, `src/hooks/useReadingState.ts` | Local progress for fictional demo editions only |
 | `src/lib/session.ts`, `src/store/useAuth.ts` | Connection restoration and browser fallback |
 | `server/google-session.ts`, `app/api/` | OAuth exchange/renewal, encrypted storage and label-restricted proxy |
 | `db/`, `drizzle/` | Connection/state schema and migrations |
@@ -87,7 +89,7 @@ The `docs/` site is separate from the private reader. GitHub Pages hosts documen
 
 ## Validation
 
-Run `npm run check:secrets`, `npm run typecheck`, `npm test` and `npm run build`. Tests cover MIME parsing, exact label matching, publication filters, reader cleanup and link preservation, isolated rendering, OAuth state checks, encrypted credentials, session renewal, user isolation and sign-out.
+Run `npm run check:secrets`, `npm run typecheck`, `npm test` and `npm run build`. Tests cover Gmail read flags, label-restricted status writes, CSRF/visitor checks, cache size/cursor boundaries, cached body reuse, corrupt or blocked browser storage, MIME parsing, exact label matching, publication filters, reader cleanup and link preservation, isolated rendering, OAuth state checks, encrypted credentials, session renewal, user isolation and sign-out.
 
 For a deployment, also test your own Google consent flow, load an edition, open an article link, and close/reopen the reader on your phone. Unit tests do not prove a real account's OAuth configuration or a physical iPhone's behaviour.
 
@@ -97,4 +99,4 @@ Use your GitHub no-reply address for public commits if you want to keep your per
 
 ## Current limits
 
-The reader supports multiple newsletter publications on any topic from one connected Gmail account. Publication grouping uses `List-ID` or the sender address; there is no publisher allowlist. The label name is exactly `_AI_SIGNAL`. There is no inbox fallback or label picker. Inline `cid:` images and non-UTF-8 encodings are not specially handled, and cleanup can vary with email formatting. Images are optional and off by default. There is no offline email archive, generated summary, mail editing or native App Store package.
+The reader supports multiple newsletter publications on any topic from one connected Gmail account. Publication grouping uses `List-ID` or the sender address; there is no publisher allowlist. The label name is exactly `_AI_SIGNAL`. There is no inbox fallback or label picker. Inline `cid:` images and non-UTF-8 encodings are not specially handled, and cleanup can vary with email formatting. Images are optional and off by default. Read/unread status comes from Gmail, and opening an edition removes its `UNREAD` flag after the server checks label membership. The newest 30 editions are cached per Gmail account in IndexedDB; older pages remain in memory only. Refresh reuses cached bodies and requests fresh flags, with full fetches for new IDs. The saved older-page cursor always belongs to the first 30-message page. Publications are discovered from loaded/cached editions rather than scanning the entire label at startup. Background checks run on reopening/returning and every ten minutes while visible. There is no polling while closed or guaranteed fully offline startup. There is no generated summary, sending/deletion UI or native App Store package.

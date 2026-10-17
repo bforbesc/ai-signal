@@ -38,7 +38,7 @@ Prepare GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_ENCRYPTION_KEY and APP_ORIGI
     <ol>
       <li><strong>Branding:</strong> enter your app name, support email and developer contact email. Use your own public information page and privacy notice for the website links. Add their domains and your reader's domain under Authorised domains, without <code>https://</code> or paths.</li>
       <li><strong>Audience:</strong> choose External for a personal Google account. Add your own Gmail address as a test user while configuring the app.</li>
-      <li><strong>Data access:</strong> add only <code>https://www.googleapis.com/auth/gmail.readonly</code>.</li>
+      <li><strong>Data access:</strong> add only <code>https://www.googleapis.com/auth/gmail.modify</code>.</li>
       <li><strong>Clients:</strong> create an OAuth client with type <strong>Web application</strong>, using the values below.</li>
     </ol>
     <table><thead><tr><th>Google field</th><th>Value for your installation</th></tr></thead><tbody>
@@ -49,8 +49,8 @@ Prepare GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_ENCRYPTION_KEY and APP_ORIGI
     </tbody></table>
     <p>The callback belongs to the <strong>reader</strong>, not to GitHub Pages. Save the client ID and client secret securely. Keep a downloaded OAuth JSON file outside your repository.</p>
     <p>Then go to <strong>Audience → Publish app</strong> and confirm the status is <strong>In production</strong>. Google's <a href="https://support.google.com/cloud/answer/15549945?hl=en">Testing status expires Gmail authorizations after seven days</a>. Publishing the OAuth configuration does not make your private reader or mailbox public.</p>
-    <p>Google documents a <a href="https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification#personal-use">verification exception for personal use</a>; an unverified-app warning and user cap may remain. Only authorize the app you created and the read-only permission you expect. Turning this into a service for unrelated users requires a separate review of Google's requirements.</p>
-    <div class="notice"><p><strong>About the permission:</strong> Google does not offer a label-specific OAuth grant. You grant read-only mailbox access; AI Signal's server restricts its reads to <code>_AI_SIGNAL</code>. It cannot send, edit or delete email with that permission.</p></div>
+    <p>Google documents a <a href="https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification#personal-use">verification exception for personal use</a>; an unverified-app warning and user cap may remain. Only authorize the app you created and the Gmail permission you expect. Turning this into a service for unrelated users requires a separate review of Google's requirements.</p>
+    <div class="notice"><p><strong>About the permission:</strong> Google does not offer a label-specific OAuth grant. Read-status sync needs <code>gmail.modify</code>, a broad permission that includes reading, composing, sending and moving mail to Trash. AI Signal’s server only reads <code>_AI_SIGNAL</code> messages and changes their <code>UNREAD</code> flag. It exposes no send, trash or delete routes.</p></div>
 
     <h2 id="connection">3. Save your connection settings.</h2>
     <p>Configure these values in your own Site's server environment. Codex can help using protected hosting settings; do not paste secret values into source files or public issues.</p>
@@ -67,11 +67,13 @@ Prepare GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_ENCRYPTION_KEY and APP_ORIGI
     <ol>
       <li>In Gmail, create the label <code>_AI_SIGNAL</code>, including the leading underscore. This name is fixed, even if your newsletters cover other topics.</li>
       <li>Apply it to editions from one or several newsletters. They appear together in the feed, with a filter for each detected publication. To label future editions, create a Gmail filter for each sender or newsletter.</li>
-      <li>Refresh AI Signal. Open an edition, use <strong>Aa</strong> for text and view preferences, and use the arrows to move between editions.</li>
+      <li>Refresh AI Signal. Unread editions have bold titles. Tap a title or preview to open it and mark it read in Gmail. Use <strong>Aa → Mark as unread</strong> to make it unread in Gmail again. Aa also holds text and view preferences; the arrows move between editions.</li>
       <li>On iPhone, open your reader in Chrome or Safari, then use <strong>Share → Add to Home Screen</strong>. In Safari, enable Open as Web App if offered. No Apple Developer membership is needed.</li>
       <li>Close and reopen the reader to check that the Gmail connection restores.</li>
     </ol>
-    <p>Newsletter filters appear automatically as publications are detected. Reading preferences stay on that device. A Home Screen app and your browser can have separate app sign-in sessions, but the same Sites identity restores the saved Gmail connection.</p>
+    <p>Newsletter filters appear automatically as publications are detected. The newest 30 editions are cached on this device, separately for each Gmail account. They open immediately while the app refreshes in the background. Older editions load when you scroll further. Read status comes from Gmail; reading preferences stay on this device. A Home Screen app and your browser can have separate app sign-in sessions, but the same Sites identity restores the saved Gmail connection.</p>
+
+    <p>After upgrading from read-only access, add <code>gmail.modify</code> under Google Cloud → Google Auth Platform → Data access, then use the reader’s <strong>Reconnect Gmail</strong> prompt once. The app keeps working with an older connection, but cannot mark editions read until you grant the new permission. New-edition checks run on reopening/returning and every ten minutes while the app is visible.</p>
 
     <h2 id="help">Common fixes</h2>
     <details><summary>Google says the redirect URI does not match.</summary><p>Copy the full callback from your own deployment into the web client's Authorised redirect URIs. Check the scheme, hostname, port and <code>/api/auth/google/callback</code> path exactly. Use your reader URL, not your public docs URL.</p></details>

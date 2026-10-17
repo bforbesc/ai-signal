@@ -1,12 +1,12 @@
 # AI Signal privacy notice
 
-Updated 16 October 2026.
+Updated 17 October 2026.
 
 This notice covers Bernardo Forbes Costa's [original private reader](https://ai-signal-reader.opalash6.chatgpt.site/). The public overview and setup pages show fictional sample content and do not connect to Gmail. People deploying their own copy are responsible for their own settings, privacy notice and contact details.
 
 ## Gmail access
 
-AI Signal displays newsletters from the exact Gmail label `_AI_SIGNAL`. Google grants the app read-only mailbox access; Google does not offer an OAuth permission restricted to one label. The application enforces that label when listing and opening messages. It also reads the connected account's email address to identify the connection. It cannot send, modify or delete mail with this permission.
+AI Signal displays newsletters from the exact Gmail label `_AI_SIGNAL` and uses Gmail’s `UNREAD` flag for read status. Opening an unread edition marks it read in Gmail. The requested `gmail.modify` permission is broader than this feature: Google permits reading, composing, sending and moving mail to Trash. Google does not offer a label-specific OAuth grant. AI Signal’s server checks label membership before reads and status updates, permits only changes to `UNREAD`, and exposes no send, trash or delete routes. The connected account’s email address identifies the connection.
 
 ## Saved connection
 
@@ -14,7 +14,7 @@ The hosted reader is private to its owner and uses Sites sign-in. The server ass
 
 ## Email content and device storage
 
-Email content passes through the hosting server to display the feed. AI Signal does not archive emails in its database or browser storage. Content remains in memory while being read. Device storage saves reading preferences and public connection settings. The service worker does not cache authenticated pages, Gmail content or tokens. Hosting providers process requests and may retain operational logs under their own policies.
+Email content passes through the hosting server; it is not archived in the server database. The newest 30 editions, including subjects, sender details, text, HTML and read flags, are cached in this browser’s IndexedDB, separately for each Gmail account. Older editions are held in memory when loaded, and newer editions replace older cached editions. A small publication catalog is also saved for the newsletter filter. Local storage saves reading preferences, public connection settings and fictional-demo progress. Real read status is fetched from Gmail and updated there. The service worker does not cache authenticated pages or tokens. Hosting providers process requests and may retain operational logs under their own policies.
 
 ## How data is used
 
@@ -26,7 +26,7 @@ Newsletter scripts, forms and embedded frames are removed from displayed email H
 
 ## Disconnecting and deleting data
 
-**Sign out** deletes the active visitor's saved Gmail connection and pending authorization states from the app database. It does not delete mail or revoke the Google-side authorization. You can separately remove AI Signal's access through [Google Account connections](https://myaccount.google.com/connections). You can clear device reading preferences using your browser's site-data controls. Infrastructure backups and operational logs are subject to the hosting provider's retention rules.
+**Sign out** deletes the active visitor's saved Gmail connection and pending authorization states from the app database, and clears that Gmail account’s device edition cache. It does not delete mail or revoke the Google-side authorization. You can separately remove AI Signal's access through [Google Account connections](https://myaccount.google.com/connections). You can clear device cache, reading preferences and demo progress using your browser's site-data controls. Infrastructure backups and operational logs are subject to the hosting provider's retention rules.
 
 ## Contact
 

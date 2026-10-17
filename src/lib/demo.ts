@@ -1,6 +1,6 @@
 import type { Newsletter } from './gmail';
 function sample(id: string, sender: string, subject: string, snippet: string, html: string, daysAgo: number): Newsletter {
-  return { id, source: { id: 'demo-alphasignal', name: 'AlphaSignal', address: '', listId: '' }, sender, subject, snippet, html, date: Date.now() - daysAgo * 86400000, text: '', address: '', readMinutes: 3 };
+  return { id, source: { id: 'demo-alphasignal', name: 'AlphaSignal', address: '', listId: '' }, sender, subject, snippet, html, date: Date.now() - daysAgo * 86400000, text: '', address: '', readMinutes: 3, isRead: false };
 }
 // Original, fictional content. No private messages, recipient addresses or tracking links are bundled.
 export const DEMO: Newsletter[] = [

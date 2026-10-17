@@ -11,6 +11,10 @@ async function mocked(responder: (url: URL, init?: RequestInit) => unknown, run:
 test('base64url preserves Unicode with omitted padding', () => assert.equal(decodeBody(b64('Olá 🧠 / +')), 'Olá 🧠 / +'));
 test('nested MIME excludes named text attachments', () => assert.equal(bodyPart({ mimeType: 'multipart/mixed', parts: [message().payload] }, 'text/plain'), 'Olá 🧠'));
 test('mapping extracts headers, rich body and date', () => { const item = mapMessage(message()); assert.equal(item.sender, 'AI Weekly'); assert.equal(item.address, 'news@example.com'); assert.equal(item.html, '<p>Full newsletter</p>'); assert.equal(item.date, 100); });
+test('read status comes from Gmail UNREAD membership', () => {
+  assert.equal(mapMessage({ ...message(), labelIds: ['Label_exact', 'UNREAD'] }).isRead, false);
+  assert.equal(mapMessage(message()).isRead, true);
+});
 test('missing headers and body have safe fallbacks', () => { const item = mapMessage({ id: 'empty' }); assert.equal(item.subject, 'Untitled newsletter'); assert.equal(item.text, ''); });
 test('merge deduplicates by ID and sorts newest first', () => { const items = mergeMessages([mapMessage(message('old','1'))], [mapMessage(message('new','9')), mapMessage(message('old','2'))]); assert.deepEqual(items.map(i=>i.id), ['new','old']); assert.equal(items[1].date,2); });
 test('label discovery matches the leading underscore exactly', async () => { assert.equal(LABEL_NAME, '_AI_SIGNAL'); await mocked(() => ({labels:[{id:'wrong',name:'AI_SIGNAL'},{id:'right',name:'_AI_SIGNAL'}]}), async () => assert.equal(await findLabel('token'),'right')); });
@@ -65,4 +69,20 @@ test('source discovery uses headers only and follows label pagination',async()=>
     assert.equal(url.searchParams.get('format'),'metadata');assert.deepEqual(url.searchParams.getAll('metadataHeaders'),['From','List-Id']);
     const item=message();item.payload.headers.push({name:'List-Id',value:url.pathname.endsWith('/one')?'one.example.com':'two.example.com'});return item;
   },async()=>{await discoverSources('token','Label_exact',sources=>{latest=sources;});assert.equal(latest.length,2);assert.equal(lists,2);});
+});
+
+test('cached editions reuse their body and fetch only flags; new editions fetch full content', async () => {
+  const cached = mapMessage({ ...message('cached'), labelIds: ['Label_exact', 'UNREAD'] });
+  const formats: string[] = [];
+  await mocked(url => {
+    if (url.pathname.endsWith('/messages')) { assert.equal(url.searchParams.get('maxResults'), '30'); return { messages: [{ id: 'cached' }, { id: 'new' }], nextPageToken: 'after-thirty' }; }
+    formats.push(url.searchParams.get('format')!);
+    return url.pathname.endsWith('/cached') ? { id: 'cached', labelIds: ['Label_exact'] } : message('new');
+  }, async () => {
+    const page = await fetchPage('token', 'Label_exact', undefined, undefined, null, [cached]);
+    assert.equal(page.items.find(item => item.id === 'cached')?.html, cached.html);
+    assert.equal(page.items.find(item => item.id === 'cached')?.isRead, true);
+    assert.equal(page.nextPageToken, 'after-thirty');
+  });
+  assert.deepEqual(formats.sort(), ['full', 'minimal']);
 });

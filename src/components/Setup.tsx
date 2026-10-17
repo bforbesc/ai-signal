@@ -15,7 +15,7 @@ export function Setup({ onClose, onSave }: { onClose: () => void; onSave: () => 
     <ol>
       <li>Open <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noreferrer">Google Cloud</a> and create a project named AI Signal.</li>
       <li>Enable <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" rel="noreferrer">Gmail API</a>.</li>
-      <li>In Google Auth Platform, set the app name, choose External, keep Testing, and add your Gmail address as a test user. Add the <code>gmail.readonly</code> scope under Data Access.</li>
+      <li>In Google Auth Platform, set the app name, choose External, keep Testing, and add your Gmail address as a test user. Add the <code>gmail.modify</code> scope under Data Access.</li>
       <li>Create a client of type <strong>Web application</strong>. Under Authorized JavaScript origins, add:<code className="origin">{window.location.origin}</code></li>
       <li>Paste the client ID below. You do not need an API key, client secret, or paid Apple account.</li>
     </ol>
@@ -24,6 +24,6 @@ export function Setup({ onClose, onSave }: { onClose: () => void; onSave: () => 
       {error && <p role="alert" className="form-error">{error}</p>}
       <button className="primary" type="submit">Save connection settings</button>
     </form>
-    <p className="fine-print">The client ID is a public identifier, saved only in this browser. Access tokens stay in memory. Google grants read-only access to your mailbox; AI Signal fetches only _AI_SIGNAL.</p>
+    <p className="fine-print">The client ID is a public identifier, saved only in this browser. Access tokens stay in memory. Google’s Gmail permission includes reading and modifying mail. AI Signal reads only _AI_SIGNAL and updates its read/unread flags.</p>
   </section></div>;
 }

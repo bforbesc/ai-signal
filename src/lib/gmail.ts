@@ -14,7 +14,7 @@ export interface NewsletterSource { id: string; name: string; address: string; l
 export interface Newsletter {
   source: NewsletterSource;
   id: string; sender: string; address: string; subject: string;
-  date: number; snippet: string; html: string; text: string; readMinutes: number;
+  date: number; snippet: string; html: string; text: string; readMinutes: number; isRead: boolean;
 }
 export class GmailError extends Error {
   constructor(message: string, public status = 0) { super(message); this.name = 'GmailError'; }
@@ -48,6 +48,7 @@ export function mapMessage(message: GmailMessage): Newsletter {
     address: from.match(/<([^>]+)>/)?.[1] ?? from,
     subject: header('subject') || 'Untitled newsletter', date: Number(message.internalDate) || 0,
     snippet: message.snippet ?? '', html, text,
+    isRead: !message.labelIds?.includes('UNREAD'),
     readMinutes: Math.max(1, Math.ceil((text || html.replace(/<[^>]+>/g, ' ')).split(/\s+/).length / 220)),
   };
 }
@@ -62,7 +63,7 @@ export async function gmailRequest<T>(path: string, token: string, signal?: Abor
   if (!response.ok) {
     const messages: Record<number, string> = {
       401: 'Your Google session has expired. Reconnect to refresh your feed.',
-      403: 'Gmail access was refused. Check that Gmail API is enabled and read-only access was allowed.',
+      403: 'Gmail access was refused. Check that Gmail API is enabled and Gmail access was allowed.',
       429: 'Gmail is busy. Please wait a moment and refresh.',
     };
     throw new GmailError(messages[response.status] ?? `Gmail returned an error (${response.status}). Please try again.`, response.status);
@@ -87,8 +88,9 @@ async function hydrate(part: GmailPart, messageId: string, token: string, signal
   }
   return copy;
 }
-export async function fetchPage(token: string, labelId: string, pageToken?: string, signal?: AbortSignal, source?: NewsletterSource | null): Promise<{ items: Newsletter[]; nextPageToken?: string }> {
-  const params: Record<string, string> = { labelIds: labelId, maxResults: '12' };
+export async function fetchPage(token: string, labelId: string, pageToken?: string, signal?: AbortSignal, source?: NewsletterSource | null, cached: Newsletter[] = []): Promise<{ items: Newsletter[]; nextPageToken?: string }> {
+  const params: Record<string, string> = { labelIds: labelId, maxResults: '30' };
+  const cachedById = new Map(cached.map(item => [item.id, item]));
   if (pageToken) params.pageToken = pageToken;
   const quote = (value: string) => value.replace(/[\\"]/g, '');
   if (source?.listId) params.q = `list:"${quote(source.listId)}"`;
@@ -98,14 +100,33 @@ export async function fetchPage(token: string, labelId: string, pageToken?: stri
   // Bounded batches. Any failure preserves the cursor so Retry cannot skip an email.
   for (let i = 0; i < (page.messages?.length ?? 0); i += 3) {
     const batch = await Promise.all(page.messages!.slice(i, i + 3).map(async ref => {
-      const message = await gmailRequest<GmailMessage>(`messages/${encodeURIComponent(ref.id)}`, token, signal, { format: 'full' });
-      if (!message.labelIds?.includes(labelId) || (source && messageSource(message).id !== source.id)) return null;
+      const existing = cachedById.get(ref.id);
+      const message = await gmailRequest<GmailMessage>(`messages/${encodeURIComponent(ref.id)}`, token, signal, { format: existing ? 'minimal' : 'full' });
+      if (!message.labelIds?.includes(labelId) || (source && (existing?.source ?? messageSource(message)).id !== source.id)) return null;
+      if (existing) return { ...existing, isRead: !message.labelIds.includes('UNREAD') };
       if (message.payload) message.payload = await hydrate(message.payload, ref.id, token, signal);
       return mapMessage(message);
     }));
     for (const item of batch) if (item) items.push(item);
   }
   return { items: mergeMessages([], items), nextPageToken: page.nextPageToken };
+}
+
+export async function setMessageRead(token: string, id: string, read: boolean, labelId: string): Promise<boolean> {
+  const managed = token === SERVER_SESSION;
+  if (!managed) {
+    const message = await gmailRequest<GmailMessage>(`messages/${encodeURIComponent(id)}`, token, undefined, { format: 'minimal' });
+    if (!message.labelIds?.includes(labelId)) throw new GmailError('This message is outside _AI_SIGNAL.', 404);
+  }
+  const response = await fetch(managed ? `/api/gmail/messages/${encodeURIComponent(id)}/read-status` : `${API}messages/${encodeURIComponent(id)}/modify`, {
+    method: 'POST', credentials: managed ? 'same-origin' : 'omit', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', ...(managed ? {} : { Authorization: `Bearer ${token}` }) },
+    body: JSON.stringify(managed ? { read } : read ? { removeLabelIds: ['UNREAD'] } : { addLabelIds: ['UNREAD'] }),
+  });
+  if (!response.ok) throw new GmailError(response.status === 428 || response.status === 403 ? 'Reconnect Gmail to enable read/unread sync.' : 'Gmail could not save this read status. Please try again.', response.status);
+  const value = await response.json() as GmailMessage;
+  if (value.id !== id || !Array.isArray(value.labelIds)) throw new GmailError('Gmail did not confirm this read status. Please refresh.');
+  return !value.labelIds.includes('UNREAD');
 }
 
 // Discover publications using headers only; full email bodies are still fetched a page at a time.

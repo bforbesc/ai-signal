@@ -1,12 +1,13 @@
 // Server-only Gmail authorization, owned by the authenticated Sites visitor.
-const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+const SCOPE = 'https://www.googleapis.com/auth/gmail.modify';
+const READ_ONLY_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 const DEFAULT_ID = '198520129642-pr18hqs7sa8cj3e2u3jqer8koj2cv45l.apps.googleusercontent.com';
 const DEFAULT_ORIGIN = 'https://ai-signal-reader.opalash6.chatgpt.site';
 const GMAIL = 'https://gmail.googleapis.com/gmail/v1/users/me/';
 interface Statement { bind(...values: unknown[]): Statement; first<T>(): Promise<T | null>; run(): Promise<unknown> }
 interface Database { prepare(sql: string): Statement }
 export interface SessionEnvironment { DB?: Database; GOOGLE_CLIENT_ID?: string; GOOGLE_CLIENT_SECRET?: string; APP_ENCRYPTION_KEY?: string; APP_ORIGIN?: string }
-interface Grant { accessToken: string; refreshToken: string; expiresAt: number; email: string }
+interface Grant { accessToken: string; refreshToken: string; expiresAt: number; email: string; canMarkRead?: boolean }
 interface Connection { version: string; encrypted: string }
 interface GoogleTokens { access_token?: string; refresh_token?: string; expires_in?: number; scope?: string; error?: string }
 class SessionError extends Error { constructor(message: string, public status = 400) { super(message); } }
@@ -56,12 +57,33 @@ async function connection(env: SessionEnvironment, user: string, force = false):
     throw error;
   }
 }
-async function gmail(env: SessionEnvironment, user: string, path: string, params: URLSearchParams = new URLSearchParams()): Promise<Record<string, any>> {
-  const get = (token: string) => fetch(`${GMAIL}${path}?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: AbortSignal.timeout(15000) });
+async function gmail(env: SessionEnvironment, user: string, path: string, params: URLSearchParams = new URLSearchParams(), body?: { addLabelIds?: string[]; removeLabelIds?: string[] }): Promise<Record<string, any>> {
+  const get = (token: string) => fetch(`${GMAIL}${path}?${params}`, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), cache: 'no-store', signal: AbortSignal.timeout(15000) });
   let response = await get((await connection(env, user)).accessToken);
   if (response.status === 401) response = await get((await connection(env, user, true)).accessToken);
   if (!response.ok) throw new SessionError(response.status === 401 ? 'Reconnect Gmail to continue.' : response.status === 429 ? 'Gmail is busy. Please try again shortly.' : 'Gmail could not load this request.', response.status);
   return response.json();
+}
+async function updateReadStatus(request: Request, env: SessionEnvironment, user: string, id: string): Promise<Response> {
+  if (request.headers.get('origin') !== origin(env)) throw new SessionError('Request origin was refused.', 403);
+  if (!request.headers.get('content-type')?.startsWith('application/json')) throw new SessionError('Send a read status as JSON.', 415);
+  const reader = request.body?.getReader();
+  if (!reader) throw new SessionError('A read status is required.');
+  const chunks: Uint8Array[] = []; let size = 0;
+  while (true) { const part = await reader.read(); if (part.done) break; size += part.value.length; if (size > 1024) { await reader.cancel(); throw new SessionError('Read status request is too large.', 413); } chunks.push(part.value); }
+  let value: unknown;
+  try { value = JSON.parse(new TextDecoder().decode(Uint8Array.from(chunks.flatMap(chunk => [...chunk])))); }
+  catch { throw new SessionError('A valid read status is required.'); }
+  if (!value || typeof value !== 'object' || Object.keys(value).length !== 1 || !('read' in value) || typeof value.read !== 'boolean') throw new SessionError('Only read/unread status can be changed.');
+  if (!(await connection(env, user)).canMarkRead) throw new SessionError('Reconnect Gmail to enable read/unread sync.', 428);
+  const labels = await gmail(env, user, 'labels');
+  const label = labels.labels?.find((item: { name: string }) => item.name === '_AI_SIGNAL');
+  if (!label) throw new SessionError('Create the _AI_SIGNAL label in Gmail first.', 404);
+  const message = await gmail(env, user, `messages/${id}`, new URLSearchParams({ format: 'minimal' }));
+  if (!message.labelIds?.includes(label.id)) throw new SessionError('This message is outside _AI_SIGNAL.', 404);
+  // Construct the provider payload here. Clients cannot change any other label.
+  const updated = await gmail(env, user, `messages/${id}/modify`, new URLSearchParams(), value.read ? { removeLabelIds: ['UNREAD'] } : { addLabelIds: ['UNREAD'] });
+  return json({ id: updated.id, labelIds: updated.labelIds });
 }
 async function gmailProxy(request: Request, env: SessionEnvironment, user: string, path: string): Promise<Response> {
   const query = new URL(request.url).searchParams;
@@ -79,7 +101,7 @@ async function gmailProxy(request: Request, env: SessionEnvironment, user: strin
   const match = path.match(/^messages\/([a-zA-Z0-9_-]+)(?:\/attachments\/([a-zA-Z0-9_-]+))?$/);
   if (!match) throw new SessionError('Unknown Gmail route.', 404);
   const messagePath = `messages/${match[1]}`;
-  const format = match[2] || query.get('format') === 'metadata' ? 'metadata' : 'full';
+  const format = match[2] || query.get('format') === 'metadata' ? 'metadata' : query.get('format') === 'minimal' ? 'minimal' : 'full';
   const params = new URLSearchParams({ format });
   if (format === 'metadata') { params.append('metadataHeaders', 'From'); params.append('metadataHeaders', 'List-Id'); }
   const message = await gmail(env, user, messagePath, params);
@@ -95,7 +117,7 @@ export async function handleGoogleSession(request: Request, env: SessionEnvironm
     const path = url.pathname;
     if (path === '/api/auth/session' && request.method === 'GET') {
       if (!configured(env)) return json({ configured: false, connected: false });
-      try { const grant = await connection(env, user); return json({ configured: true, connected: true, email: grant.email }); }
+      try { const grant = await connection(env, user); return json({ configured: true, connected: true, email: grant.email, canMarkRead: grant.canMarkRead === true }); }
       catch (error) { if (error instanceof SessionError && error.status === 401) return json({ configured: true, connected: false }); throw error; }
     }
     if (!configured(env)) throw new SessionError('Persistent Gmail connection needs server configuration.', 503);
@@ -122,14 +144,17 @@ export async function handleGoogleSession(request: Request, env: SessionEnvironm
       if (url.searchParams.has('error')) return redirect(env, '/?gmail_connection=cancelled');
       const code = url.searchParams.get('code'); if (!code || code.length > 4096) throw new SessionError('Google did not return a valid connection code.');
       const result = await tokens(env, { code, grant_type: 'authorization_code', redirect_uri: `${origin(env)}/api/auth/google/callback` });
-      if (!result.scope?.split(' ').includes(SCOPE) || !result.refresh_token) throw new SessionError('Allow read-only Gmail access and reconnect to enable automatic renewal.');
+      const scopes = result.scope?.split(' ') ?? [];
+      if ((!scopes.includes(SCOPE) && !scopes.includes(READ_ONLY_SCOPE)) || !result.refresh_token) throw new SessionError('Allow Gmail access and reconnect to enable automatic renewal.');
       const response = await fetch(`${GMAIL}profile`, { headers: { Authorization: `Bearer ${result.access_token}` }, cache: 'no-store', signal: AbortSignal.timeout(15000) });
       if (!response.ok) throw new SessionError('Google connected, but Gmail could not open. Try again.', 502);
       const profile = await response.json() as { emailAddress: string };
-      const grant: Grant = { accessToken: result.access_token!, refreshToken: result.refresh_token, expiresAt: Date.now() + result.expires_in! * 1000, email: profile.emailAddress };
+      const grant: Grant = { accessToken: result.access_token!, refreshToken: result.refresh_token, expiresAt: Date.now() + result.expires_in! * 1000, email: profile.emailAddress, canMarkRead: scopes.includes(SCOPE) };
       await env.DB!.prepare('INSERT INTO gmail_connections (user_id, version, encrypted, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET version = excluded.version, encrypted = excluded.encrypted, updated_at = excluded.updated_at').bind(user, random(), await encrypt(env, user, grant), Date.now()).run();
       return redirect(env, '/?gmail_connection=connected');
     }
+    const statusRoute = path.match(/^\/api\/gmail\/messages\/([a-zA-Z0-9_-]+)\/read-status$/);
+    if (statusRoute && request.method === 'POST') return await updateReadStatus(request, env, user, statusRoute[1]);
     if (path.startsWith('/api/gmail/') && request.method === 'GET') return await gmailProxy(request, env, user, path.slice('/api/gmail/'.length));
     return json({ error: 'Unknown route or method.' }, 404);
   } catch (error) { return json({ error: error instanceof SessionError ? error.message : 'The Gmail connection could not complete. Please try again.' }, error instanceof SessionError ? error.status : 502); }

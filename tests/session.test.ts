@@ -7,7 +7,7 @@ import { readSession, disconnectSession } from '../src/lib/session.ts';
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 const app = 'https://reader.example';
-const scope = 'https://www.googleapis.com/auth/gmail.readonly';
+const scope = 'https://www.googleapis.com/auth/gmail.modify';
 function context() {
   const db = new DatabaseSync(':memory:');
   db.exec(readFileSync(new URL('../drizzle/0000_pretty_hannibal_king.sql', import.meta.url), 'utf8'));
@@ -20,14 +20,14 @@ function context() {
   const call = (path: string, init?: RequestInit, user?: string) => handleGoogleSession(request(path, init, user), env);
   return { env, db, request, call };
 }
-function google(expires = 3600) {
+function google(expires = 3600, grantedScope = scope) {
   let refreshed = 0;
   const calls: { url: string; init?: RequestInit }[] = [];
   globalThis.fetch = async (input, init) => {
     const url = String(input); calls.push({ url, init });
     if (url === 'https://oauth2.googleapis.com/token') {
       const refresh = String(init?.body).includes('grant_type=refresh_token'); if (refresh) refreshed++;
-      return Response.json({ access_token: refresh ? 'renewed-test-access' : 'test-access', refresh_token: refresh ? undefined : 'test-refresh', expires_in: refresh ? 3600 : expires, scope });
+      return Response.json({ access_token: refresh ? 'renewed-test-access' : 'test-access', refresh_token: refresh ? undefined : 'test-refresh', expires_in: refresh ? 3600 : expires, scope: grantedScope });
     }
     if (url.includes('/profile')) return Response.json({ emailAddress: 'reader@example.com' });
     if (url.includes('/labels')) return Response.json({ labels: [{ id: 'allowed', name: '_AI_SIGNAL' }, { id: 'INBOX', name: 'INBOX' }] });
@@ -55,13 +55,13 @@ test('persistent session is private, and an unconfigured server exposes no crede
   const result = await handleGoogleSession(ctx.request('/api/auth/session'), { ...ctx.env, GOOGLE_CLIENT_SECRET: undefined });
   assert.deepEqual(await result.json(), { configured: false, connected: false }); assert.equal(result.headers.get('cache-control'), 'private, no-store');
 });
-test('authorization is offline/read-only; callback stores encrypted tokens, not browser tokens', async () => {
+test('authorization is offline with Gmail status sync; callback stores encrypted tokens, not browser tokens', async () => {
   const ctx = context(); google(); const flow = await connect(ctx);
   assert.equal(flow.target.searchParams.get('access_type'), 'offline'); assert.equal(flow.target.searchParams.get('scope'), scope);
   assert.equal(flow.target.searchParams.get('redirect_uri'), app + '/api/auth/google/callback');
   const row = ctx.db.prepare('SELECT * FROM gmail_connections').get()!;
   assert.ok(!String(row.encrypted).includes('test-access')); assert.ok(!String(row.encrypted).includes('test-refresh')); assert.ok(!String(row.encrypted).includes('reader@example.com'));
-  const status = await ctx.call('/api/auth/session'); assert.deepEqual(await status.json(), { configured: true, connected: true, email: 'reader@example.com' });
+  const status = await ctx.call('/api/auth/session'); assert.deepEqual(await status.json(), { configured: true, connected: true, email: 'reader@example.com', canMarkRead: true });
 });
 test('reopening restores an expired access grant using its refresh token', async () => {
   const ctx = context(); const mock = google(1); await connect(ctx);
@@ -139,6 +139,39 @@ test('browser session restoration handles static hosting and does not persist to
   globalThis.fetch = async () => new Response('<html>Static app</html>', { headers: { 'content-type': 'text/html' } });
   assert.equal((await readSession()).available, false);
   globalThis.fetch = async (_input, init) => { assert.equal(init?.cache, 'no-store'); return Response.json({ configured: true, connected: true, email: 'reader@example.com' }); };
-  assert.deepEqual(await readSession(), { available: true, configured: true, connected: true, email: 'reader@example.com' });
+  assert.deepEqual(await readSession(), { available: true, configured: true, connected: true, email: 'reader@example.com', canMarkRead: false });
   globalThis.fetch = async (_input, init) => { assert.equal(init?.method, 'POST'); return new Response(null, { status: 200 }); }; await disconnectSession();
+});
+
+test('read-status changes only UNREAD after checking the exact label and visitor', async () => {
+  const ctx = context(); const mock = google(); await connect(ctx);
+  const provider = globalThis.fetch; let labels = ['allowed', 'UNREAD'];
+  globalThis.fetch = async (input, init) => {
+    if (String(input).includes('/messages/edition/modify')) {
+      assert.equal(init?.method, 'POST');
+      const body = JSON.parse(String(init?.body));
+      assert.ok(JSON.stringify(body) === '{"removeLabelIds":["UNREAD"]}' || JSON.stringify(body) === '{"addLabelIds":["UNREAD"]}');
+      labels = body.addLabelIds ? ['allowed', 'UNREAD'] : ['allowed'];
+      return Response.json({ id: 'edition', labelIds: labels });
+    }
+    return provider(input, init);
+  };
+  const write = (id: string, body: unknown, user = 'owner', origin = app) => ctx.call(`/api/gmail/messages/${id}/read-status`, { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify(body) }, user);
+  assert.equal((await write('edition', { read: true })).status, 200); assert.deepEqual(labels, ['allowed']);
+  assert.equal((await write('edition', { read: false })).status, 200); assert.deepEqual(labels, ['allowed', 'UNREAD']);
+  assert.equal((await write('private', { read: true })).status, 404);
+  assert.equal((await write('edition', { read: true }, 'other-user')).status, 401);
+  assert.equal((await write('edition', { read: true }, 'owner', 'https://attacker.example')).status, 403);
+  assert.equal((await write('edition', { read: true, removeLabelIds: ['allowed'] })).status, 400);
+  assert.equal((await write('edition', { read: 'yes' })).status, 400);
+  assert.ok(!mock.calls.some(call => /\/trash|\/send|\/delete/.test(call.url)));
+});
+
+test('existing read-only connections still load but require reconnection before any write', async () => {
+  const ctx = context(); const mock = google(3600, 'https://www.googleapis.com/auth/gmail.readonly'); await connect(ctx);
+  assert.equal((await (await ctx.call('/api/auth/session')).json() as { canMarkRead: boolean }).canMarkRead, false);
+  assert.equal((await ctx.call('/api/gmail/messages')).status, 200);
+  const response = await ctx.call('/api/gmail/messages/edition/read-status', { method: 'POST', headers: { origin: app, 'content-type': 'application/json' }, body: '{"read":true}' });
+  assert.equal(response.status, 428);
+  assert.ok(!mock.calls.some(call => call.url.includes('/modify')));
 });

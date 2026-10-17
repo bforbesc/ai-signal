@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { type AccessToken, fetchGmailProfile, requestAccessToken } from '../lib/auth';
 import { SERVER_SESSION, readSession, disconnectSession } from '../lib/session';
+import { clearFeedCache } from '../lib/feed-cache';
 interface AuthState {
   token: AccessToken | null; email: string | null; loading: boolean; error: string | null;
   restoring: boolean; serverManaged: boolean; serverAvailable: boolean;
@@ -17,7 +18,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       const status = await readSession();
       if (run !== generation) return;
       set({ serverAvailable: status.available, serverManaged: status.configured,
-        ...(status.connected ? { token: { value: SERVER_SESSION, expiresAt: Number.MAX_SAFE_INTEGER }, email: status.email!, error: null } : {}) });
+        ...(status.connected ? { token: { value: SERVER_SESSION, expiresAt: Number.MAX_SAFE_INTEGER, canMarkRead: status.canMarkRead }, email: status.email!, error: null } : {}) });
     } catch (error) { if (run === generation) set({ error: error instanceof Error ? error.message : String(error) }); }
     finally { if (run === generation) set({ restoring: false }); }
   },
@@ -37,12 +38,15 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
   },
   async signOut() {
+    const account = get().email;
     generation++;
     if (get().serverManaged) {
       set({ loading: true, error: null });
       try { await disconnectSession(); }
       catch (error) { set({ loading: false, error: error instanceof Error ? error.message : String(error) }); return false; }
     }
-    set({ token: null, email: null, loading: false, restoring: false, error: null }); return true;
+    set({ token: null, email: null, loading: false, restoring: false, error: null });
+    if (account && !await clearFeedCache(account)) set({ error: 'Signed out. Clear this site’s data in browser settings to remove its device cache.' });
+    return true;
   },
 }));
