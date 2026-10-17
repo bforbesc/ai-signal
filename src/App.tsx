@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { SignIn } from './components/SignIn';
 import { Setup } from './components/Setup';
 import { ReadingSettings } from './components/ReadingSettings';
+import { ReaderPages } from './components/ReaderPages';
 import { useReadingPreferences } from './store/useReadingPreferences';
-import { navigateSwipe, readSwipeMessage } from './lib/reader-navigation';
+import { navigateSwipe, type SwipeDirection } from './lib/reader-navigation';
 import { useAuth } from './store/useAuth';
 import { getClientId, prepareGoogle } from './lib/auth';
 import { DEMO } from './lib/demo';
@@ -28,24 +29,22 @@ export function Reader({ item, onClose, onNext, onPrevious, position, statusErro
   const [gestureChannel] = useState(() => Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join(''));
   const doc = useMemo(() => readerDocument(item, original, images, font, gestureChannel), [item, original, images, font, gestureChannel]);
   const readerRef = useRef<HTMLElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const navigation = useRef({ onNext, onPrevious });
-  navigation.current = { onNext, onPrevious };
+  const [direction, setDirection] = useState<SwipeDirection>('next');
+  const [moving, setMoving] = useState(false);
+  const locked = useRef(false);
+  function navigate(requested: SwipeDirection) {
+    if (locked.current || !(requested === 'next' ? onNext : onPrevious)) return;
+    locked.current = true; setMoving(true); setDirection(requested);
+    navigateSwipe(requested, { onNext, onPrevious });
+  }
+  function settled() { locked.current = false; setMoving(false); }
   useEffect(() => { readerRef.current?.focus({ preventScroll: true }); }, [item.id]);
-  useEffect(() => {
-    const swipe = (event: MessageEvent) => {
-      const direction = readSwipeMessage(event, iframeRef.current?.contentWindow ?? null, gestureChannel);
-      navigateSwipe(direction, navigation.current);
-    };
-    window.addEventListener('message', swipe);
-    return () => window.removeEventListener('message', swipe);
-  }, [gestureChannel]);
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.defaultPrevented) onClose(); }; document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close); }, [onClose]);
   return <section ref={readerRef} tabIndex={-1} role="dialog" aria-modal="true" className="reader" aria-label="Newsletter reader">
     <header className="reader-toolbar"><button className="back-button" onClick={onClose} aria-label="Back to feed">←</button><span className="book-publisher">{item.sender}</span><ReadingSettings isRead={isRead} savingRead={savingRead} onToggleRead={onToggleRead}/></header>
-    <iframe ref={iframeRef} key={item.id} title={`Full newsletter: ${item.subject}`} sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerPolicy="no-referrer" srcDoc={doc}/>
+    <ReaderPages id={item.id} title={item.subject} html={doc} channel={gestureChannel} direction={direction} onSwipe={navigate} onSettled={settled}/>
     {statusError && <p className="reader-status-message" role="alert">{statusError}</p>}
-    <footer className="reader-footer"><button disabled={!onPrevious} onClick={onPrevious} aria-label="Previous newsletter">↑</button><span className="book-position">{position}</span><button disabled={!onNext} onClick={onNext} aria-label="Next newsletter">↓</button></footer>
+    <footer className="reader-footer"><button disabled={!onPrevious || moving} onClick={() => navigate('previous')} aria-label="Previous newsletter">↑</button><span className="book-position">{position}</span><button disabled={!onNext || moving} onClick={() => navigate('next')} aria-label="Next newsletter">↓</button></footer>
   </section>;
 }
 export default function App() {

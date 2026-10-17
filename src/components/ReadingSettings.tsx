@@ -23,7 +23,7 @@ export function ReadingSettings({ onToggleRead, isRead, savingRead, onSetup, cla
       <div className="type-controls"><span>Text size</span><button onClick={() => resize(font - 1)} disabled={font <= 16 || original} aria-label="Smaller text">A−</button><span>{font}</span><button onClick={() => resize(font + 1)} disabled={font >= 24 || original} aria-label="Larger text">A+</button></div>
       <div className="reader-options" role="group" aria-label="Default view"><span>Default view</span><div><button aria-pressed={!original} className={!original ? 'active' : ''} onClick={() => chooseLayout(false)}>Reading view</button><button aria-pressed={original} className={original ? 'active' : ''} onClick={() => chooseLayout(true)}>Email layout</button></div></div>
       <button className="image-preference" aria-pressed={images} onClick={toggleImages}><span>Images</span><span>{images ? 'On' : 'Off'}</span></button>
-      <p className="preferences-hint" role={storageUnavailable ? 'status' : undefined}>{storageUnavailable ? 'Device storage is unavailable. Changes apply for this visit.' : 'Saved for all newsletters on this device.'}</p>
+      {storageUnavailable && <p className="preferences-hint" role="status">Device storage is unavailable. Changes apply for this visit.</p>}
       {onToggleRead && <button className="reading-state-action" disabled={savingRead} onClick={onToggleRead}>{savingRead ? 'Saving to Gmail…' : isRead ? 'Mark as unread' : 'Mark as read'}</button>}
       {onSetup && <button className="reading-state-action" onClick={() => { setOpen(false); onSetup(); }}>Connection setup</button>}
     </div></>}

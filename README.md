@@ -30,7 +30,7 @@ An open-source **Gmail newsletter reader** for **multiple publications, on any t
 - Shows unread titles in bold and marks an edition read in Gmail when you open it.
 - Offers a clean reading view with soft section dividers, plus the original email layout.
 - Offers **Aa** on the feed and in the reader; text size, default view and image preferences stay saved on your device.
-- Moves between editions with a left/right swipe or the navigation arrows, stopping at each end.
+- Slides smoothly between editions with a left/right swipe or the navigation arrows, stopping at each end and respecting reduced-motion preferences.
 - Keeps article links working and removes common signup menus and email footers.
 - Keeps the newest 30 editions cached on your device, refreshes in the background, and loads older editions as you scroll.
 - Restores your Gmail connection when you return to a configured private deployment.
@@ -45,7 +45,7 @@ I built AI Signal for myself because I didn't want to pay for [Meco](https://mec
 
 I use it for AI news, which is where the name comes from. You can use it for research, business, culture or any other newsletter topic, with one publication or several.
 
-AI Signal is an independent project, unaffiliated with Meco. The label is currently fixed as `_AI_SIGNAL`, including for newsletters about other topics. Email layouts vary; see the [current limits](docs/DEVELOPMENT.md#current-limits).
+AI Signal is an independent project, unaffiliated with Meco. The label is currently fixed as `_AI_SIGNAL`, including for newsletters about other topics. The reader handles standard HTML and plain-text newsletters without an AlphaSignal requirement. Common long-form articles and table-based digests are covered by format tests. Reading view simplifies complex layouts and data tables; use **Aa → Email layout** when the publisher’s structure matters. See the [current limits](docs/DEVELOPMENT.md#current-limits).
 
 ## Set up your own reader
 
